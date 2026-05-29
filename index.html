@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clay Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:            #F5F0E8;
+    --surface:       #FDFAF4;
+    --surface-alt:   #E8E4D8;
+    --olive-deep:    #4A5240;
+    --olive-mid:     #6B7560;
+    --sage:          #8A9070;
+    --sage-light:    #C5C9B8;
+    --terra-deep:    #8B4513;
+    --terra-mid:     #C1714A;
+    --terra-tint:    #F0D9C8;
+    --text-primary:  #2C2418;
+    --text-secondary:#5C5242;
+    --text-muted:    #8A7E6E;
+    --font-serif:    'Lora', Georgia, serif;
+    --font-sans:     'DM Sans', system-ui, sans-serif;
+    --radius-card:   12px;
+    --radius-input:  8px;
+    --nav-height:    64px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100dvh;
+    padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
+  }
+
+  /* ── PAT Banner ── */
+  #pat-banner {
+    background: var(--terra-tint);
+    border-bottom: 1px solid var(--terra-mid);
+    padding: 12px 16px;
+    display: none;
+  }
+  #pat-banner.visible { display: block; }
+  #pat-banner p { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+  #pat-banner a { color: var(--terra-deep); }
+  .pat-row { display: flex; gap: 8px; }
+  #pat-input {
+    flex: 1; padding: 8px 12px; border-radius: var(--radius-input);
+    border: 1px solid var(--terra-mid); background: var(--surface);
+    font-family: var(--font-sans); font-size: 14px; color: var(--text-primary);
+  }
+  #pat-save-btn {
+    padding: 8px 16px; background: var(--terra-mid); color: #fff;
+    border: none; border-radius: var(--radius-input); font-family: var(--font-sans);
+    font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 12px);
+    left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--text-primary); color: #fff; padding: 10px 20px;
+    border-radius: 20px; font-size: 13px; opacity: 0;
+    transition: opacity .25s, transform .25s; pointer-events: none; z-index: 999; white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── App header ── */
+  header {
+    padding: 18px 16px 10px;
+    border-bottom: 1px solid var(--sage-light);
+    background: var(--surface);
+  }
+  header h1 { font-family: var(--font-serif); font-size: 22px; color: var(--olive-deep); }
+
+  /* ── Tab content ── */
+  .tab-content { display: none; padding: 16px; }
+  .tab-content.active { display: block; }
+
+  /* ── Bottom Nav ── */
+  nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: calc(var(--nav-height) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--surface);
+    border-top: 1px solid var(--sage-light);
+    display: flex; z-index: 100;
+  }
+  .nav-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 3px; background: none; border: none;
+    cursor: pointer; font-family: var(--font-sans); font-size: 11px;
+    font-weight: 500; color: var(--sage); min-height: 44px; padding: 6px 0;
+  }
+  .nav-btn svg { width: 22px; height: 22px; }
+  .nav-btn.active { color: var(--olive-deep); }
+  .nav-btn.active svg path, .nav-btn.active svg rect, .nav-btn.active svg circle { fill: var(--olive-deep); }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface); border-radius: var(--radius-card);
+    border: 1px solid var(--sage-light); padding: 16px; margin-bottom: 12px;
+  }
+  .card-title {
+    font-family: var(--font-serif); font-size: 15px; font-weight: 600;
+    color: var(--text-primary); margin-bottom: 12px;
+  }
+
+  /* ── Form elements ── */
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px;
+  }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 10px 12px; border-radius: var(--radius-input);
+    border: 1px solid var(--sage-light); background: var(--surface-alt);
+    font-family: var(--font-sans); font-size: 15px; color: var(--text-primary);
+    -webkit-appearance: none; appearance: none;
+  }
+  .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238A7E6E' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+  .field textarea { min-height: 72px; resize: vertical; }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: none; border-color: var(--olive-mid);
+  }
+
+  /* ── Unit toggle ── */
+  .unit-toggle {
+    display: inline-flex; background: var(--surface-alt);
+    border-radius: 20px; padding: 3px; border: 1px solid var(--sage-light);
+  }
+  .unit-btn {
+    padding: 6px 18px; border-radius: 16px; border: none; background: none;
+    font-family: var(--font-sans); font-size: 14px; font-weight: 500;
+    color: var(--text-muted); cursor: pointer; min-height: 36px;
+  }
+  .unit-btn.active { background: var(--olive-deep); color: #fff; }
+
+  /* ── Dim row ── */
+  .dim-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .dim-row .field { margin-bottom: 0; }
+
+  /* ── Clay selector ── */
+  .clay-selector-wrap { position: relative; }
+  #clay-search {
+    width: 100%; padding: 10px 12px; border-radius: var(--radius-input);
+    border: 1px solid var(--sage-light); background: var(--surface-alt);
+    font-family: var(--font-sans); font-size: 15px; color: var(--text-primary);
+  }
+  #clay-search:focus { outline: none; border-color: var(--olive-mid); }
+  .clay-dropdown {
+    display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+    background: var(--surface); border: 1px solid var(--sage-light);
+    border-radius: var(--radius-input); box-shadow: 0 4px 16px rgba(0,0,0,.1);
+    max-height: 280px; overflow-y: auto; margin-top: 2px;
+  }
+  .clay-dropdown.open { display: block; }
+  .clay-option {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    cursor: pointer; border-bottom: 1px solid var(--surface-alt);
+  }
+  .clay-option:last-child { border-bottom: none; }
+  .clay-option:hover, .clay-option.focused { background: var(--surface-alt); }
+  .clay-option img { width: 36px; height: 36px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+  .clay-option-info { flex: 1; min-width: 0; }
+  .clay-option-name { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+  .clay-option-brand { font-size: 12px; color: var(--text-muted); }
+  .clay-group-label {
+    padding: 6px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--text-muted); background: var(--surface-alt);
+  }
+
+  /* ── SVG illustration ── */
+  .illustration-wrap {
+    display: flex; justify-content: center; padding: 8px 0 4px;
+  }
+  #pot-svg { width: 160px; height: 220px; }
+
+  /* ── Results ── */
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .result-item { text-align: center; }
+  .result-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
+  .result-value { font-size: 22px; font-weight: 600; color: var(--olive-deep); font-family: var(--font-serif); }
+  .result-unit { font-size: 12px; color: var(--text-muted); }
+  .clay-ref { font-size: 12px; color: var(--text-secondary); border-top: 1px solid var(--surface-alt); padding-top: 10px; margin-top: 4px; }
+  .clay-ref span { color: var(--text-muted); margin-right: 10px; }
+
+  .weight-value { font-size: 36px; font-weight: 600; color: var(--olive-deep); font-family: var(--font-serif); }
+  .weight-note { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── Save form ── */
+  #save-form-wrap { display: none; }
+  #save-form-wrap.open { display: block; }
+  .btn-primary {
+    width: 100%; padding: 14px; background: var(--olive-deep); color: #fff;
+    border: none; border-radius: var(--radius-input); font-family: var(--font-sans);
+    font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 4px; min-height: 48px;
+  }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-secondary {
+    width: 100%; padding: 12px; background: none; color: var(--olive-mid);
+    border: 1px solid var(--sage-light); border-radius: var(--radius-input);
+    font-family: var(--font-sans); font-size: 14px; font-weight: 500; cursor: pointer;
+    margin-top: 8px; min-height: 44px;
+  }
+  .btn-danger {
+    padding: 8px 12px; background: none; color: var(--terra-mid);
+    border: 1px solid var(--terra-mid); border-radius: 6px;
+    font-family: var(--font-sans); font-size: 13px; cursor: pointer; min-height: 36px;
+  }
+
+  /* ── Saved tab ── */
+  .saved-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .saved-header h2 { font-family: var(--font-serif); font-size: 18px; }
+  .clay-group { margin-bottom: 20px; }
+  .clay-group-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--sage-light);
+  }
+  .clay-group-header img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
+  .clay-group-header span { font-weight: 600; font-size: 15px; }
+
+  .saved-card { background: var(--surface); border-radius: var(--radius-card); border: 1px solid var(--sage-light); padding: 14px; margin-bottom: 10px; }
+  .saved-card-title { font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+  .saved-card-meta { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+  .saved-card-dims { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+  .saved-card-dims strong { color: var(--olive-deep); }
+  .saved-card-notes { font-size: 13px; color: var(--text-muted); font-style: italic; margin-bottom: 6px; }
+  .saved-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .saved-card-date { font-size: 12px; color: var(--text-muted); }
+  .empty-state { text-align: center; padding: 48px 16px; color: var(--text-muted); }
+  .empty-state p { font-size: 15px; margin-top: 8px; }
+
+  /* ── Library tab ── */
+  .library-header { margin-bottom: 14px; }
+  .library-header h2 { font-family: var(--font-serif); font-size: 18px; margin-bottom: 4px; }
+  .clay-card {
+    background: var(--surface); border-radius: var(--radius-card);
+    border: 1px solid var(--sage-light); padding: 14px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .clay-card img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+  .clay-card-img-placeholder {
+    width: 56px; height: 56px; border-radius: 8px; background: var(--surface-alt);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    font-size: 22px;
+  }
+  .clay-card-info { flex: 1; min-width: 0; }
+  .clay-card-name { font-weight: 600; font-size: 14px; }
+  .clay-card-brand { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .clay-card-stats { font-size: 12px; color: var(--text-secondary); }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 600; margin-right: 4px;
+  }
+  .badge-type { background: var(--surface-alt); color: var(--text-secondary); }
+  .badge-custom { background: var(--terra-tint); color: var(--terra-deep); }
+  .clay-card-actions { display: flex; flex-direction: column; gap: 4px; }
+
+  .add-clay-section { margin-top: 20px; }
+  .add-clay-section h3 { font-family: var(--font-serif); font-size: 16px; margin-bottom: 14px; color: var(--text-primary); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .two-col .field { margin-bottom: 0; }
+
+  /* ── Loading spinner ── */
+  .spinner {
+    width: 18px; height: 18px; border: 2px solid var(--sage-light);
+    border-top-color: var(--olive-deep); border-radius: 50%;
+    animation: spin .6s linear infinite; display: inline-block; vertical-align: middle; margin-left: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- PAT Banner -->
+<div id="pat-banner">
+  <p>To save your work across devices, enter your GitHub personal access token. <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">Create one here</a> with Contents: Read and Write on jbedrozo/clayCalculator.</p>
+  <div class="pat-row">
+    <input type="password" id="pat-input" placeholder="ghp_…">
+    <button class="btn" id="pat-save-btn" onclick="savePat()">Save</button>
+  </div>
+</div>
+
+<!-- Header -->
+<header>
+  <h1>Clay Calculator</h1>
+</header>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════
+     TAB 1: CALCULATOR
+════════════════════════════════════════ -->
+<div id="tab-calc" class="tab-content active">
+
+  <!-- Unit toggle -->
+  <div style="margin-bottom:14px;">
+    <div class="unit-toggle">
+      <button class="unit-btn active" id="unit-in" onclick="setUnit('in')">in</button>
+      <button class="unit-btn" id="unit-cm" onclick="setUnit('cm')">cm</button>
+    </div>
+  </div>
+
+  <!-- Clay selector -->
+  <div class="field">
+    <label>Clay Body</label>
+    <div class="clay-selector-wrap">
+      <input type="text" id="clay-search" placeholder="Search clays…" autocomplete="off"
+        onfocus="openDropdown()" oninput="filterDropdown()" onblur="scheduleClose()">
+      <div class="clay-dropdown" id="clay-dropdown"></div>
+    </div>
+  </div>
+
+  <!-- Form type -->
+  <div class="field">
+    <label>Form Type</label>
+    <select id="form-type" onchange="recalc()">
+      <option value="cylinder">Cylinder / Mug</option>
+      <option value="bowl">Bowl</option>
+      <option value="plate">Plate / Shallow Dish</option>
+      <option value="vase">Vase</option>
+      <option value="jar">Lidded Jar</option>
+      <option value="tumbler">Tumbler</option>
+    </select>
+  </div>
+
+  <!-- Desired dimensions -->
+  <div class="field">
+    <label>Desired Dimensions (<span id="dim-unit-label">in</span>)</label>
+    <div class="dim-row">
+      <div class="field"><label>Height</label><input type="number" id="dim-h" value="4" min="0" step="0.25" oninput="recalc()"></div>
+      <div class="field"><label>Width</label><input type="number" id="dim-w" value="3.5" min="0" step="0.25" oninput="recalc()"></div>
+      <div class="field"><label>Depth</label><input type="number" id="dim-d" value="3.5" min="0" step="0.25" oninput="recalc()"></div>
+    </div>
+  </div>
+
+  <!-- Taper -->
+  <div class="field">
+    <label>Taper</label>
+    <select id="taper" onchange="recalc()">
+      <option value="straight">Straight-walled</option>
+      <option value="base">Tapers at base</option>
+      <option value="shoulder">Tapers at shoulder</option>
+      <option value="both">Tapers at both</option>
+    </select>
+  </div>
+
+  <!-- Wall & foot thickness -->
+  <div class="two-col" style="margin-bottom:14px;">
+    <div class="field">
+      <label>Wall Thickness (<span class="wall-unit-label">in</span>)</label>
+      <input type="number" id="wall-thick" value="0.25" min="0.05" step="0.05" oninput="recalc()">
+    </div>
+    <div class="field">
+      <label>Foot Thickness (<span class="wall-unit-label">in</span>)</label>
+      <input type="number" id="foot-thick" value="0.375" min="0.05" step="0.05" oninput="recalc()">
+    </div>
+  </div>
+
+  <!-- SVG Illustration -->
+  <div class="illustration-wrap">
+    <svg id="pot-svg" viewBox="0 0 160 220" xmlns="http://www.w3.org/2000/svg">
+      <g id="pot-drawing"></g>
+    </svg>
+  </div>
+
+  <!-- Results: Throwing dimensions -->
+  <div class="card">
+    <div class="card-title">Throwing Dimensions</div>
+    <div class="result-grid">
+      <div class="result-item">
+        <div class="result-label">Height</div>
+        <div class="result-value" id="res-h">—</div>
+        <div class="result-unit" id="res-h-unit">in</div>
+      </div>
+      <div class="result-item">
+        <div class="result-label">Width</div>
+        <div class="result-value" id="res-w">—</div>
+        <div class="result-unit" id="res-w-unit">in</div>
+      </div>
+      <div class="result-item">
+        <div class="result-label">Depth</div>
+        <div class="result-value" id="res-d">—</div>
+        <div class="result-unit" id="res-d-unit">in</div>
+      </div>
+    </div>
+    <div class="clay-ref" id="clay-ref">Select a clay body above</div>
+  </div>
+
+  <!-- Results: Clay weight -->
+  <div class="card">
+    <div class="card-title">Estimated Clay Weight</div>
+    <div class="weight-value" id="res-weight">—</div>
+    <div class="result-unit">lbs</div>
+    <div class="weight-note">approximate — includes 15% trim loss</div>
+  </div>
+
+  <!-- Save button -->
+  <button class="btn-primary" onclick="toggleSaveForm()">Save this calculation</button>
+
+  <!-- Inline save form -->
+  <div id="save-form-wrap" class="card" style="margin-top:12px;">
+    <div class="card-title">Save Calculation</div>
+    <div class="field">
+      <label>Project Name *</label>
+      <input type="text" id="save-name" placeholder="e.g. Farmers market mugs">
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <textarea id="save-notes" placeholder="Optional notes…"></textarea>
+    </div>
+    <button class="btn-primary" id="save-confirm-btn" onclick="saveCalculation()">Save to GitHub</button>
+    <button class="btn-secondary" onclick="toggleSaveForm()">Cancel</button>
+  </div>
+
+</div><!-- /tab-calc -->
+
+
+<!-- ══════════════════════════════════════
+     TAB 2: SAVED
+════════════════════════════════════════ -->
+<div id="tab-saved" class="tab-content">
+  <div class="saved-header">
+    <h2>Saved Calculations</h2>
+    <button class="btn-secondary" style="width:auto;padding:8px 14px;" onclick="exportJSON()">Export JSON</button>
+  </div>
+  <div id="saved-list"></div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     TAB 3: LIBRARY
+════════════════════════════════════════ -->
+<div id="tab-library" class="tab-content">
+  <div class="library-header">
+    <h2>Clay Library</h2>
+  </div>
+  <div id="clay-list"></div>
+
+  <div class="add-clay-section">
+    <h3>Add Custom Clay</h3>
+    <div class="two-col" style="margin-bottom:10px;">
+      <div class="field"><label>Brand</label><input type="text" id="new-brand" placeholder="e.g. Laguna"></div>
+      <div class="field"><label>Name</label><input type="text" id="new-name" placeholder="e.g. Speckled Buff"></div>
+    </div>
+    <div class="field"><label>Color</label><input type="text" id="new-color" placeholder="e.g. Tan with speckles"></div>
+    <div class="field">
+      <label>Type</label>
+      <select id="new-type">
+        <option>Stoneware</option><option>Porcelain</option><option>Earthenware</option><option>Raku</option><option>Other</option>
+      </select>
+    </div>
+    <div class="two-col" style="margin-bottom:10px;">
+      <div class="field"><label>Cone Min</label><input type="number" id="new-cone-min" placeholder="5"></div>
+      <div class="field"><label>Cone Max</label><input type="number" id="new-cone-max" placeholder="6"></div>
+    </div>
+    <div class="two-col" style="margin-bottom:10px;">
+      <div class="field"><label>Shrinkage %</label><input type="number" id="new-shrinkage" placeholder="12" step="0.1"></div>
+      <div class="field"><label>Absorption %</label><input type="number" id="new-absorption" placeholder="3" step="0.1"></div>
+    </div>
+    <div class="field">
+      <label>Image (optional)</label>
+      <input type="file" id="new-image" accept="image/*" onchange="previewNewImage(event)">
+    </div>
+    <div id="new-image-preview" style="margin-bottom:10px;display:none;">
+      <img id="new-image-img" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">
+    </div>
+    <button class="btn-primary" onclick="addCustomClay()">Add Clay to Library</button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     BOTTOM NAV
+════════════════════════════════════════ -->
+<nav>
+  <button class="nav-btn active" id="nav-calc" onclick="switchTab('calc')">
+    <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    Calculator
+  </button>
+  <button class="nav-btn" id="nav-saved" onclick="switchTab('saved')">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3-7 3V5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    Saved
+  </button>
+  <button class="nav-btn" id="nav-library" onclick="switchTab('library')">
+    <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M9 9a3 3 0 116 0c0 2-3 3-3 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="18" r=".8" fill="currentColor"/></svg>
+    Library
+  </button>
+</nav>
+
+<script>
+// ═══════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════
+const PRELOADED_CLAYS = [
+  { id:"laguna-speckled-buff", brand:"Laguna", name:"Speckled Buff", sku:"WC403", color:"Tan with speckles", type:"Stoneware", coneMin:5, coneMax:6, shrinkage:12, absorption:3, image:"images/laguna-speckled-buff.png", custom:false },
+  { id:"laguna-bmix5", brand:"Laguna", name:"B-Mix 5", sku:"WC401", color:"Light gray (fires cream)", type:"Stoneware", coneMin:5, coneMax:6, shrinkage:12, absorption:2.3, image:"images/laguna-bmix5.png", custom:false },
+  { id:"laguna-bmix5-speckles", brand:"Laguna", name:"B-Mix 5 with Speckles", sku:"WC408", color:"Light gray with speckles", type:"Stoneware", coneMin:5, coneMax:6, shrinkage:12, absorption:2.75, image:"images/laguna-bmix5-speckles.png", custom:false },
+  { id:"cac-oregon-brown", brand:"Clay Art Center", name:"Oregon Brown Smooth", sku:"CL221", color:"Red/brown (fires dark brown)", type:"Stoneware", coneMin:5, coneMax:6, shrinkage:12.9, absorption:null, image:"images/cac-oregon-brown.png", custom:false },
+  { id:"cac-walnut", brand:"Clay Art Center", name:"Walnut Smooth", sku:"", color:"Light brown (fires medium brown)", type:"Stoneware", coneMin:5, coneMax:6, shrinkage:13, absorption:0.2, image:"images/cac-walnut.png", custom:false },
+  { id:"sps-seamix6", brand:"Seattle Pottery Supply", name:"Sea Mix 6", sku:"SP648", color:"Off-white", type:"Stoneware", coneMin:5, coneMax:6, shrinkage:11.32, absorption:1.64, image:"images/sps-seamix6.png", custom:false }
+];
+
+const REPO = 'jbedrozo/clayCalculator';
+const API  = 'https://api.github.com/repos/' + REPO + '/contents/data/';
+
+let savedCalculations = [];
+let customClays = [];
+let savedCalcSha = null;
+let customClaysSha = null;
+let selectedClayId = 'laguna-speckled-buff';
+let unit = 'in';
+let newImageBase64 = null;
+let deleteConfirmId = null;
+
+function getPat() { return localStorage.getItem('clay_calculator_pat') || ''; }
+function savePat() {
+  const v = document.getElementById('pat-input').value.trim();
+  if (!v) return;
+  localStorage.setItem('clay_calculator_pat', v);
+  document.getElementById('pat-banner').classList.remove('visible');
+  loadFromGitHub();
+}
+
+function allClays() { return [...PRELOADED_CLAYS, ...customClays]; }
+function getClay(id) { return allClays().find(c => c.id === id); }
+
+// ═══════════════════════════════════════
+// GITHUB API
+// ═══════════════════════════════════════
+async function ghGet(file) {
+  const res = await fetch(API + file, {
+    headers: { Accept: 'application/vnd.github+json' }
+  });
+  if (!res.ok) throw new Error(res.status);
+  return res.json();
+}
+
+async function ghPut(file, data, sha, message) {
+  const pat = getPat();
+  if (!pat) { showToast('No PAT — enter your token to save'); return false; }
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+  const body = { message, content, sha };
+  const res = await fetch(API + file, {
+    method: 'PUT',
+    headers: {
+      Authorization: 'Bearer ' + pat,
+      'Content-Type': 'application/json',
+      Accept: 'application/vnd.github+json'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) { showToast('Sync failed — check your connection or PAT'); return false; }
+  const json = await res.json();
+  return json.content.sha;
+}
+
+async function loadFromGitHub() {
+  try {
+    const sc = await ghGet('saved-calculations.json');
+    savedCalcSha = sc.sha;
+    savedCalculations = JSON.parse(decodeURIComponent(escape(atob(sc.content.replace(/\n/g,'')))));
+  } catch(e) { savedCalculations = []; }
+  try {
+    const cc = await ghGet('custom-clays.json');
+    customClaysSha = cc.sha;
+    customClays = JSON.parse(decodeURIComponent(escape(atob(cc.content.replace(/\n/g,'')))));
+  } catch(e) { customClays = []; }
+  renderSaved();
+  renderLibrary();
+  renderDropdown('');
+}
+
+// ═══════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════
+function switchTab(t) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + t).classList.add('active');
+  document.getElementById('nav-' + t).classList.add('active');
+  if (t === 'saved') renderSaved();
+  if (t === 'library') renderLibrary();
+}
+
+// ═══════════════════════════════════════
+// UNIT
+// ═══════════════════════════════════════
+function setUnit(u) {
+  const factor = u === 'cm' ? 2.54 : 1/2.54;
+  const convert = u !== unit;
+  unit = u;
+  document.getElementById('unit-in').classList.toggle('active', u === 'in');
+  document.getElementById('unit-cm').classList.toggle('active', u === 'cm');
+  document.getElementById('dim-unit-label').textContent = u;
+  document.querySelectorAll('.wall-unit-label').forEach(el => el.textContent = u);
+  if (convert) {
+    ['dim-h','dim-w','dim-d','wall-thick','foot-thick'].forEach(id => {
+      const el = document.getElementById(id);
+      el.value = (parseFloat(el.value) * factor).toFixed(2);
+    });
+  }
+  recalc();
+}
+
+// ═══════════════════════════════════════
+// CLAY DROPDOWN
+// ═══════════════════════════════════════
+function renderDropdown(filter) {
+  const dd = document.getElementById('clay-dropdown');
+  const q = filter.toLowerCase();
+  const clays = allClays().filter(c =>
+    c.name.toLowerCase().includes(q) || c.brand.toLowerCase().includes(q)
+  );
+  const groups = {};
+  clays.forEach(c => { (groups[c.type] = groups[c.type] || []).push(c); });
+  let html = '';
+  Object.entries(groups).forEach(([type, list]) => {
+    html += `<div class="clay-group-label">${type}</div>`;
+    list.forEach(c => {
+      const img = c.image
+        ? `<img src="${c.image}" alt="">`
+        : `<div class="clay-option img-ph">🏺</div>`;
+      html += `<div class="clay-option" data-id="${c.id}" onmousedown="selectClay('${c.id}')">${img}<div class="clay-option-info"><div class="clay-option-name">${c.name}</div><div class="clay-option-brand">${c.brand}</div></div></div>`;
+    });
+  });
+  dd.innerHTML = html || '<div style="padding:12px;color:var(--text-muted);font-size:14px;">No results</div>';
+}
+
+function openDropdown() {
+  renderDropdown(document.getElementById('clay-search').value);
+  document.getElementById('clay-dropdown').classList.add('open');
+}
+function filterDropdown() {
+  renderDropdown(document.getElementById('clay-search').value);
+  document.getElementById('clay-dropdown').classList.add('open');
+}
+function scheduleClose() { setTimeout(() => document.getElementById('clay-dropdown').classList.remove('open'), 200); }
+function selectClay(id) {
+  selectedClayId = id;
+  const clay = getClay(id);
+  document.getElementById('clay-search').value = clay ? clay.brand + ' — ' + clay.name : '';
+  document.getElementById('clay-dropdown').classList.remove('open');
+  recalc();
+}
+
+// ═══════════════════════════════════════
+// FORMULAS
+// ═══════════════════════════════════════
+function toIn(v) { return unit === 'cm' ? v / 2.54 : v; }
+function fromIn(v) { return unit === 'cm' ? v * 2.54 : v; }
+function fmt(v) { return v.toFixed(2); }
+
+function calcThrow(desired, shrinkage) {
+  return desired / (1 - shrinkage / 100);
+}
+
+function calcWeight(hIn, wIn, dIn, wallIn, footIn, taper) {
+  const taperMult = { straight:1.0, base:0.65, shoulder:0.65, both:0.45 }[taper] || 1.0;
+  const outerVol = hIn * wIn * dIn * taperMult;
+  const innerH = Math.max(0, hIn - footIn);
+  const innerW = Math.max(0, wIn - 2 * wallIn);
+  const innerD = Math.max(0, dIn - 2 * wallIn);
+  const innerVol = innerH * innerW * innerD * taperMult;
+  const shellVolIn3 = Math.max(0, outerVol - innerVol);
+  const shellVolCm3 = shellVolIn3 * 16.387;
+  const grams = shellVolCm3 * 1.9 * 1.15;
+  return grams / 453.592;
+}
+
+function recalc() {
+  const clay = getClay(selectedClayId);
+  const hRaw = parseFloat(document.getElementById('dim-h').value) || 0;
+  const wRaw = parseFloat(document.getElementById('dim-w').value) || 0;
+  const dRaw = parseFloat(document.getElementById('dim-d').value) || 0;
+  const wallRaw = parseFloat(document.getElementById('wall-thick').value) || 0.25;
+  const footRaw = parseFloat(document.getElementById('foot-thick').value) || 0.375;
+  const taper = document.getElementById('taper').value;
+  const formType = document.getElementById('form-type').value;
+
+  const hIn = toIn(hRaw), wIn = toIn(wRaw), dIn = toIn(dRaw);
+  const wallIn = toIn(wallRaw), footIn = toIn(footRaw);
+
+  if (!clay || hIn <= 0 || wIn <= 0 || dIn <= 0) {
+    document.getElementById('res-h').textContent = '—';
+    document.getElementById('res-w').textContent = '—';
+    document.getElementById('res-d').textContent = '—';
+    document.getElementById('res-weight').textContent = '—';
+    drawPot(formType, taper, hIn, wIn, wallIn, footIn);
+    return;
+  }
+
+  const tH = calcThrow(hIn, clay.shrinkage);
+  const tW = calcThrow(wIn, clay.shrinkage);
+  const tD = calcThrow(dIn, clay.shrinkage);
+  const weight = calcWeight(hIn, wIn, dIn, wallIn, footIn, taper);
+
+  document.getElementById('res-h').textContent = fmt(fromIn(tH));
+  document.getElementById('res-w').textContent = fmt(fromIn(tW));
+  document.getElementById('res-d').textContent = fmt(fromIn(tD));
+  ['res-h-unit','res-w-unit','res-d-unit'].forEach(id => document.getElementById(id).textContent = unit);
+  document.getElementById('res-weight').textContent = weight.toFixed(2);
+
+  const absStr = clay.absorption != null ? clay.absorption + '% abs' : '';
+  document.getElementById('clay-ref').innerHTML =
+    `<span>${clay.brand} ${clay.name}</span><span>${clay.shrinkage}% shrinkage</span><span>Cone ${clay.coneMin}–${clay.coneMax}</span>${absStr ? '<span>' + absStr + '</span>' : ''}`;
+
+  drawPot(formType, taper, hIn, wIn, wallIn, footIn);
+}
+
+// ═══════════════════════════════════════
+// SVG ILLUSTRATION
+// ═══════════════════════════════════════
+function drawPot(formType, taper, h, w, wall, foot) {
+  const g = document.getElementById('pot-drawing');
+  const VW = 160, VH = 220;
+  const padding = 20;
+  const maxW = VW - padding * 2;
+  const maxH = VH - padding * 2 - 20;
+
+  // Normalize proportions
+  const ratio = (h > 0 && w > 0) ? Math.min(1, h / w) : 1;
+  const drawH = Math.min(maxH, maxH * Math.min(1, h / 8));
+  const drawW = Math.min(maxW, drawH / Math.max(0.3, ratio));
+  const cx = VW / 2;
+  const top = padding + (maxH - drawH) / 2;
+  const bot = top + drawH;
+  const hw = drawW / 2;
+
+  // Wall thickness in SVG units
+  const wallPx = Math.min(hw * 0.2, (wall / Math.max(w, 0.1)) * hw * 2);
+  const footPx = Math.min(drawH * 0.15, (foot / Math.max(h, 0.1)) * drawH);
+
+  // Outer profile points based on form + taper
+  let topW = hw, midW = hw, botW = hw;
+  if (formType === 'bowl') {
+    topW = hw; midW = hw; botW = hw * 0.3;
+  } else if (formType === 'plate') {
+    topW = hw; midW = hw * 0.95; botW = hw * 0.5;
+  } else if (formType === 'vase') {
+    topW = hw * 0.55; midW = hw; botW = hw * 0.45;
+  } else if (formType === 'jar') {
+    topW = hw * 0.7; midW = hw; botW = hw * 0.65;
+  } else if (formType === 'tumbler') {
+    topW = hw * 0.9; midW = hw * 0.85; botW = hw * 0.75;
+  }
+
+  // Taper overrides
+  if (taper === 'base') botW = botW * 0.6;
+  if (taper === 'shoulder') topW = topW * 0.7;
+  if (taper === 'both') { botW = botW * 0.6; topW = topW * 0.7; }
+
+  const midY = top + drawH * 0.5;
+
+  // Outer path (right side, mirrored)
+  function outerPath() {
+    return `M ${cx - topW} ${top}
+      C ${cx - topW} ${top + drawH*0.1}, ${cx - midW} ${midY - drawH*0.1}, ${cx - midW} ${midY}
+      C ${cx - midW} ${midY + drawH*0.1}, ${cx - botW} ${bot - drawH*0.05}, ${cx - botW} ${bot}
+      L ${cx + botW} ${bot}
+      C ${cx + botW} ${bot - drawH*0.05}, ${cx + midW} ${midY + drawH*0.1}, ${cx + midW} ${midY}
+      C ${cx + midW} ${midY - drawH*0.1}, ${cx + topW} ${top + drawH*0.1}, ${cx + topW} ${top}
+      Z`;
+  }
+
+  // Inner path
+  const iTopW = Math.max(2, topW - wallPx);
+  const iMidW = Math.max(2, midW - wallPx);
+  const iBotW = Math.max(2, botW - wallPx);
+  const innerTop = top + wallPx * 0.5;
+  const innerBot = bot - footPx;
+
+  function innerPath() {
+    return `M ${cx - iTopW} ${innerTop}
+      C ${cx - iTopW} ${innerTop + drawH*0.1}, ${cx - iMidW} ${midY - drawH*0.1}, ${cx - iMidW} ${midY}
+      C ${cx - iMidW} ${midY + drawH*0.1}, ${cx - iBotW} ${innerBot - drawH*0.05}, ${cx - iBotW} ${innerBot}
+      L ${cx + iBotW} ${innerBot}
+      C ${cx + iBotW} ${innerBot - drawH*0.05}, ${cx + iMidW} ${midY + drawH*0.1}, ${cx + iMidW} ${midY}
+      C ${cx + iMidW} ${midY - drawH*0.1}, ${cx + iTopW} ${innerTop + drawH*0.1}, ${cx + iTopW} ${innerTop}
+      Z`;
+  }
+
+  g.innerHTML = `
+    <!-- Outer fill -->
+    <path d="${outerPath()}" fill="#E8E4D8" stroke="none"/>
+    <!-- Inner hollow -->
+    <path d="${innerPath()}" fill="#F5F0E8" stroke="none"/>
+    <!-- Outer contour -->
+    <path d="${outerPath()}" fill="none" stroke="#4A5240" stroke-width="2" stroke-linejoin="round"/>
+    <!-- Inner wall line -->
+    <path d="${innerPath()}" fill="none" stroke="#8A9070" stroke-width="1" stroke-linejoin="round"/>
+    <!-- Foot ring -->
+    <line x1="${cx - botW + 4}" y1="${bot}" x2="${cx + botW - 4}" y2="${bot}" stroke="#4A5240" stroke-width="2" stroke-linecap="round"/>
+    <!-- Rim line -->
+    <line x1="${cx - topW}" y1="${top}" x2="${cx + topW}" y2="${top}" stroke="#4A5240" stroke-width="2" stroke-linecap="round"/>
+  `;
+}
+
+// ═══════════════════════════════════════
+// SAVE CALCULATION
+// ═══════════════════════════════════════
+function toggleSaveForm() {
+  const wrap = document.getElementById('save-form-wrap');
+  wrap.classList.toggle('open');
+  if (wrap.classList.contains('open')) {
+    document.getElementById('save-name').focus();
+  }
+}
+
+function generateId() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
+async function saveCalculation() {
+  const name = document.getElementById('save-name').value.trim();
+  if (!name) { showToast('Project name is required'); return; }
+  const clay = getClay(selectedClayId);
+  if (!clay) { showToast('Select a clay body first'); return; }
+
+  const hRaw = parseFloat(document.getElementById('dim-h').value) || 0;
+  const wRaw = parseFloat(document.getElementById('dim-w').value) || 0;
+  const dRaw = parseFloat(document.getElementById('dim-d').value) || 0;
+  const wallRaw = parseFloat(document.getElementById('wall-thick').value) || 0.25;
+  const footRaw = parseFloat(document.getElementById('foot-thick').value) || 0.375;
+  const taper = document.getElementById('taper').value;
+  const formType = document.getElementById('form-type').value;
+
+  const hIn = toIn(hRaw), wIn = toIn(wRaw), dIn = toIn(dRaw);
+  const wallIn = toIn(wallRaw), footIn = toIn(footRaw);
+  const tH = calcThrow(hIn, clay.shrinkage);
+  const tW = calcThrow(wIn, clay.shrinkage);
+  const tD = calcThrow(dIn, clay.shrinkage);
+  const weight = calcWeight(hIn, wIn, dIn, wallIn, footIn, taper);
+
+  const calc = {
+    id: generateId(),
+    projectName: name,
+    notes: document.getElementById('save-notes').value.trim(),
+    clayId: selectedClayId,
+    formType, taper, unit,
+    desiredHeight: hRaw, desiredWidth: wRaw, desiredDepth: dRaw,
+    wallThickness: wallRaw, footThickness: footRaw,
+    throwingHeight: parseFloat(fromIn(tH).toFixed(3)),
+    throwingWidth:  parseFloat(fromIn(tW).toFixed(3)),
+    throwingDepth:  parseFloat(fromIn(tD).toFixed(3)),
+    estimatedWeightLbs: parseFloat(weight.toFixed(3)),
+    savedAt: new Date().toISOString()
+  };
+
+  const btn = document.getElementById('save-confirm-btn');
+  btn.disabled = true;
+  btn.innerHTML = 'Saving… <span class="spinner"></span>';
+
+  try {
+    // Re-fetch SHA before writing
+    const current = await ghGet('saved-calculations.json');
+    savedCalcSha = current.sha;
+    savedCalculations = JSON.parse(decodeURIComponent(escape(atob(current.content.replace(/\n/g,'')))));
+  } catch(e) {}
+
+  savedCalculations.push(calc);
+  const newSha = await ghPut('saved-calculations.json', savedCalculations, savedCalcSha, 'add calculation: ' + name);
+
+  btn.disabled = false;
+  btn.innerHTML = 'Save to GitHub';
+
+  if (newSha) {
+    savedCalcSha = newSha;
+    document.getElementById('save-form-wrap').classList.remove('open');
+    document.getElementById('save-name').value = '';
+    document.getElementById('save-notes').value = '';
+    showToast('Saved!');
+    renderSaved();
+  }
+}
+
+// ═══════════════════════════════════════
+// SAVED TAB
+// ═══════════════════════════════════════
+function renderSaved() {
+  const el = document.getElementById('saved-list');
+  if (!savedCalculations.length) {
+    el.innerHTML = '<div class="empty-state"><div style="font-size:40px">🏺</div><p>No calculations saved yet.<br>Use the Calculator tab to get started.</p></div>';
+    return;
+  }
+
+  // Group by clay
+  const groups = {};
+  savedCalculations.slice().sort((a,b) => new Date(b.savedAt)-new Date(a.savedAt))
+    .forEach(c => { (groups[c.clayId] = groups[c.clayId] || []).push(c); });
+
+  let html = '';
+  Object.entries(groups).forEach(([clayId, calcs]) => {
+    const clay = getClay(clayId);
+    const imgHtml = clay?.image
+      ? `<img src="${clay.image}" alt="">`
+      : `<div style="width:40px;height:40px;background:var(--surface-alt);border-radius:8px;"></div>`;
+    html += `<div class="clay-group"><div class="clay-group-header">${imgHtml}<span>${clay ? clay.brand + ' ' + clay.name : clayId}</span></div>`;
+    calcs.forEach(c => {
+      const d = new Date(c.savedAt);
+      const dateStr = d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+      const u = c.unit || 'in';
+      const taperLabel = { straight:'Straight-walled', base:'Tapers at base', shoulder:'Tapers at shoulder', both:'Tapers at both' }[c.taper] || c.taper;
+      const formLabel = { cylinder:'Cylinder/Mug', bowl:'Bowl', plate:'Plate/Shallow Dish', vase:'Vase', jar:'Lidded Jar', tumbler:'Tumbler' }[c.formType] || c.formType;
+      html += `<div class="saved-card">
+        <div class="saved-card-title">${esc(c.projectName)}</div>
+        <div class="saved-card-meta">${formLabel} · ${taperLabel}</div>
+        <div class="saved-card-dims">
+          ${c.desiredHeight} × ${c.desiredWidth} × ${c.desiredDepth} ${u}
+          → <strong>${c.throwingHeight} × ${c.throwingWidth} × ${c.throwingDepth} ${u}</strong>
+        </div>
+        <div class="saved-card-meta">${c.estimatedWeightLbs} lbs estimated</div>
+        ${c.notes ? `<div class="saved-card-notes">${esc(c.notes)}</div>` : ''}
+        <div class="saved-card-footer">
+          <span class="saved-card-date">${dateStr}</span>
+          <button class="btn-danger" onclick="confirmDelete('${c.id}', this)">🗑 Delete</button>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function confirmDelete(id, btn) {
+  if (deleteConfirmId === id) {
+    deleteCalculation(id);
+    deleteConfirmId = null;
+  } else {
+    deleteConfirmId = id;
+    btn.textContent = 'Confirm?';
+    btn.style.background = 'var(--terra-tint)';
+    setTimeout(() => {
+      if (deleteConfirmId === id) {
+        deleteConfirmId = null;
+        btn.textContent = '🗑 Delete';
+        btn.style.background = '';
+      }
+    }, 3000);
+  }
+}
+
+async function deleteCalculation(id) {
+  try {
+    const current = await ghGet('saved-calculations.json');
+    savedCalcSha = current.sha;
+    savedCalculations = JSON.parse(decodeURIComponent(escape(atob(current.content.replace(/\n/g,'')))));
+  } catch(e) {}
+  savedCalculations = savedCalculations.filter(c => c.id !== id);
+  const newSha = await ghPut('saved-calculations.json', savedCalculations, savedCalcSha, 'delete calculation');
+  if (newSha) { savedCalcSha = newSha; showToast('Deleted'); renderSaved(); }
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(savedCalculations, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'saved-calculations.json';
+  a.click();
+}
+
+// ═══════════════════════════════════════
+// LIBRARY TAB
+// ═══════════════════════════════════════
+function renderLibrary() {
+  const el = document.getElementById('clay-list');
+  const clays = allClays();
+  let html = '';
+  clays.forEach(c => {
+    const imgHtml = c.image
+      ? `<img src="${c.image}" alt="${c.name}">`
+      : `<div class="clay-card-img-placeholder">🏺</div>`;
+    const absStr = c.absorption != null ? `${c.absorption}% abs · ` : '';
+    const deleteBtn = c.custom ? `<button class="btn-danger" onclick="deleteCustomClay('${c.id}')">🗑</button>` : '';
+    html += `<div class="clay-card">
+      ${imgHtml}
+      <div class="clay-card-info">
+        <div class="clay-card-name">
+          ${esc(c.name)}
+          ${c.custom ? '<span class="badge badge-custom">custom</span>' : ''}
+        </div>
+        <div class="clay-card-brand">${esc(c.brand)}${c.sku ? ' · ' + c.sku : ''}</div>
+        <div>
+          <span class="badge badge-type">${c.type}</span>
+          <span class="badge badge-type">Cone ${c.coneMin}–${c.coneMax}</span>
+        </div>
+        <div class="clay-card-stats">${c.shrinkage}% shrinkage · ${absStr}${c.color}</div>
+      </div>
+      ${deleteBtn ? `<div class="clay-card-actions">${deleteBtn}</div>` : ''}
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+function previewNewImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    newImageBase64 = e.target.result;
+    document.getElementById('new-image-img').src = newImageBase64;
+    document.getElementById('new-image-preview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function addCustomClay() {
+  const brand = document.getElementById('new-brand').value.trim();
+  const name  = document.getElementById('new-name').value.trim();
+  if (!brand || !name) { showToast('Brand and Name are required'); return; }
+  const shrinkage = parseFloat(document.getElementById('new-shrinkage').value);
+  if (isNaN(shrinkage)) { showToast('Shrinkage % is required'); return; }
+
+  const clay = {
+    id: 'custom-' + generateId().slice(0,8),
+    brand, name,
+    color: document.getElementById('new-color').value.trim(),
+    type: document.getElementById('new-type').value,
+    coneMin: parseInt(document.getElementById('new-cone-min').value) || 0,
+    coneMax: parseInt(document.getElementById('new-cone-max').value) || 0,
+    shrinkage,
+    absorption: parseFloat(document.getElementById('new-absorption').value) || null,
+    image: newImageBase64 || null,
+    custom: true
+  };
+
+  try {
+    const current = await ghGet('custom-clays.json');
+    customClaysSha = current.sha;
+    customClays = JSON.parse(decodeURIComponent(escape(atob(current.content.replace(/\n/g,'')))));
+  } catch(e) {}
+
+  customClays.push(clay);
+  const newSha = await ghPut('custom-clays.json', customClays, customClaysSha, 'add clay: ' + name);
+  if (newSha) {
+    customClaysSha = newSha;
+    // Clear form
+    ['new-brand','new-name','new-color','new-shrinkage','new-absorption','new-cone-min','new-cone-max'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('new-image').value = '';
+    document.getElementById('new-image-preview').style.display = 'none';
+    newImageBase64 = null;
+    renderLibrary();
+    renderDropdown('');
+    showToast('Clay added!');
+  }
+}
+
+async function deleteCustomClay(id) {
+  if (!confirm('Delete this custom clay?')) return;
+  try {
+    const current = await ghGet('custom-clays.json');
+    customClaysSha = current.sha;
+    customClays = JSON.parse(decodeURIComponent(escape(atob(current.content.replace(/\n/g,'')))));
+  } catch(e) {}
+  customClays = customClays.filter(c => c.id !== id);
+  const newSha = await ghPut('custom-clays.json', customClays, customClaysSha, 'delete clay');
+  if (newSha) { customClaysSha = newSha; renderLibrary(); renderDropdown(''); showToast('Deleted'); }
+}
+
+// ═══════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+(function init() {
+  if (!getPat()) {
+    document.getElementById('pat-banner').classList.add('visible');
+  }
+  // Set default clay
+  selectClay('laguna-speckled-buff');
+  renderDropdown('');
+  renderLibrary();
+  recalc();
+  loadFromGitHub();
+})();
+</script>
+</body>
+</html>
