@@ -408,6 +408,11 @@
         <input type="checkbox" id="two-diam-toggle" onchange="toggleTwoDiam()" style="width:auto;accent-color:var(--olive-deep);">
         Different top &amp; base diameters
       </label>
+      <!-- Interior capacity (inline below dimensions) -->
+      <div id="res-volume-wrap" style="margin-top:10px;padding:10px 12px;background:var(--surface-alt);border-radius:var(--radius-input);display:none;">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">Est. Interior Capacity</div>
+        <div style="font-size:16px;font-weight:600;color:var(--olive-deep);font-family:var(--font-serif);" id="res-volume">—</div>
+      </div>
     </div>
 
     <!-- Taper -->
@@ -505,11 +510,6 @@
       <div class="weight-value" id="res-weight">—</div>
       <div class="result-unit" id="res-weight-unit">lbs</div>
       <div class="weight-note">approximate — includes 15% trim loss</div>
-      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--surface-alt);">
-        <div style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Est. Interior Capacity</div>
-        <div style="font-size:20px;font-weight:600;color:var(--olive-deep);font-family:var(--font-serif);" id="res-volume">—</div>
-        <div class="weight-note">approximate</div>
-      </div>
     </div>
 
   </div><!-- /calc-right -->
@@ -862,8 +862,9 @@ function recalc() {
     document.getElementById('res-diam').textContent = '—';
     document.getElementById('res-w').textContent    = '—';
     document.getElementById('res-d').textContent    = '—';
-    document.getElementById('res-weight').textContent  = '—';
-    document.getElementById('res-volume').textContent  = '—';
+    document.getElementById('res-weight').textContent        = '—';
+    document.getElementById('res-volume').textContent        = '—';
+    document.getElementById('res-volume-wrap').style.display = 'none';
     drawPot(formType, taper, hIn, wIn, wallIn, footIn);
     return;
   }
@@ -883,7 +884,8 @@ function recalc() {
   const displayWeight = weightUnit === 'g' ? (weight * 453.592).toFixed(0) : weight.toFixed(2);
   document.getElementById('res-weight').textContent      = displayWeight;
   document.getElementById('res-weight-unit').textContent = weightUnit === 'g' ? 'g' : 'lbs';
-  document.getElementById('res-volume').textContent      = `~${vol.floz.toFixed(1)} fl oz / ${Math.round(vol.ml)} mL`;
+  document.getElementById('res-volume').textContent        = `~${vol.floz.toFixed(1)} fl oz / ${Math.round(vol.ml)} mL`;
+  document.getElementById('res-volume-wrap').style.display = '';
 
   const absStr = clay.absorption != null ? clay.absorption + '% abs' : '';
   document.getElementById('clay-ref').innerHTML =
