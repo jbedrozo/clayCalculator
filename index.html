@@ -1021,13 +1021,40 @@ function renderSaved() {
         ${c.notes ? `<div class="saved-card-notes">${esc(c.notes)}</div>` : ''}
         <div class="saved-card-footer">
           <span class="saved-card-date">${dateStr}</span>
-          <button class="btn-danger" onclick="confirmDelete('${c.id}', this)">🗑 Delete</button>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-secondary" style="width:auto;padding:6px 12px;font-size:13px;margin-top:0;" onclick="duplicateCalc('${c.id}')">⧉ Duplicate</button>
+            <button class="btn-danger" onclick="confirmDelete('${c.id}', this)">🗑 Delete</button>
+          </div>
         </div>
       </div>`;
     });
     html += '</div>';
   });
   el.innerHTML = html;
+}
+
+function duplicateCalc(id) {
+  const c = savedCalculations.find(s => s.id === id);
+  if (!c) return;
+
+  switchTab('calc');
+
+  setUnit(c.unit || 'in');
+  selectClay(c.clayId);
+  document.getElementById('form-type').value   = c.formType;
+  document.getElementById('taper').value        = c.taper;
+  document.getElementById('dim-h').value        = c.desiredHeight;
+  document.getElementById('dim-w').value        = c.desiredWidth;
+  document.getElementById('dim-d').value        = c.desiredDepth;
+  document.getElementById('wall-thick').value   = c.wallThickness;
+  document.getElementById('foot-thick').value   = c.footThickness;
+  document.getElementById('save-form-wrap').classList.remove('open');
+  document.getElementById('save-name').value    = c.projectName + ' (copy)';
+  document.getElementById('save-notes').value   = c.notes || '';
+
+  recalc();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  showToast('Dimensions loaded — change the clay body, then save');
 }
 
 function confirmDelete(id, btn) {
