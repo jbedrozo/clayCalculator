@@ -184,7 +184,7 @@
   #pot-svg { width: 160px; height: 220px; }
 
   /* ── Results ── */
-  .result-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
   .result-item { text-align: center; }
   .result-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
   .result-value { font-size: 22px; font-weight: 600; color: var(--olive-deep); font-family: var(--font-serif); }
@@ -393,11 +393,21 @@
     <!-- Desired dimensions -->
     <div class="field">
       <label>Desired Dimensions (<span id="dim-unit-label">in</span>)</label>
-      <div class="dim-row">
-        <div class="field"><label>Height</label><input type="number" id="dim-h" value="4" min="0" step="0.25" oninput="recalc()"></div>
-        <div class="field"><label>Width</label><input type="number" id="dim-w" value="3.5" min="0" step="0.25" oninput="recalc()"></div>
-        <div class="field"><label>Depth</label><input type="number" id="dim-d" value="3.5" min="0" step="0.25" oninput="recalc()"></div>
+      <!-- Single-diameter mode (default) -->
+      <div id="dim-single" class="two-col" style="margin-bottom:6px;">
+        <div class="field" style="margin-bottom:0;"><label>Height</label><input type="number" id="dim-h" value="4" min="0" step="0.25" oninput="recalc()"></div>
+        <div class="field" style="margin-bottom:0;"><label>Diameter</label><input type="number" id="dim-diam" value="3.5" min="0" step="0.25" oninput="recalc()"></div>
       </div>
+      <!-- Two-diameter mode (hidden by default) -->
+      <div id="dim-two" class="dim-row" style="display:none;margin-bottom:6px;">
+        <div class="field" style="margin-bottom:0;"><label>Height</label><input type="number" id="dim-h2" value="4" min="0" step="0.25" oninput="syncH();recalc()"></div>
+        <div class="field" style="margin-bottom:0;"><label>Top Ø</label><input type="number" id="dim-w" value="3.5" min="0" step="0.25" oninput="recalc()"></div>
+        <div class="field" style="margin-bottom:0;"><label>Base Ø</label><input type="number" id="dim-d" value="3.5" min="0" step="0.25" oninput="recalc()"></div>
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted);margin-top:4px;">
+        <input type="checkbox" id="two-diam-toggle" onchange="toggleTwoDiam()" style="width:auto;accent-color:var(--olive-deep);">
+        Different top &amp; base diameters
+      </label>
     </div>
 
     <!-- Taper -->
@@ -456,19 +466,26 @@
     <!-- Results: Throwing dimensions -->
     <div class="card">
       <div class="card-title">Throwing Dimensions</div>
-      <div class="result-grid">
+      <div class="result-grid" id="result-grid">
         <div class="result-item">
           <div class="result-label">Height</div>
           <div class="result-value" id="res-h">—</div>
           <div class="result-unit" id="res-h-unit">in</div>
         </div>
-        <div class="result-item">
-          <div class="result-label">Width</div>
+        <!-- Single-diam result -->
+        <div class="result-item" id="res-diam-item">
+          <div class="result-label">Diameter</div>
+          <div class="result-value" id="res-diam">—</div>
+          <div class="result-unit" id="res-diam-unit">in</div>
+        </div>
+        <!-- Two-diam results (hidden by default) -->
+        <div class="result-item" id="res-w-item" style="display:none;">
+          <div class="result-label">Top Ø</div>
           <div class="result-value" id="res-w">—</div>
           <div class="result-unit" id="res-w-unit">in</div>
         </div>
-        <div class="result-item">
-          <div class="result-label">Depth</div>
+        <div class="result-item" id="res-d-item" style="display:none;">
+          <div class="result-label">Base Ø</div>
           <div class="result-value" id="res-d">—</div>
           <div class="result-unit" id="res-d-unit">in</div>
         </div>
@@ -488,6 +505,11 @@
       <div class="weight-value" id="res-weight">—</div>
       <div class="result-unit" id="res-weight-unit">lbs</div>
       <div class="weight-note">approximate — includes 15% trim loss</div>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--surface-alt);">
+        <div style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Est. Interior Capacity</div>
+        <div style="font-size:20px;font-weight:600;color:var(--olive-deep);font-family:var(--font-serif);" id="res-volume">—</div>
+        <div class="weight-note">approximate</div>
+      </div>
     </div>
 
   </div><!-- /calc-right -->
@@ -771,11 +793,60 @@ function calcWeight(hIn, wIn, dIn, wallIn, footIn, taper) {
   return grams / 453.592;
 }
 
+let twoDiamMode = false;
+
+function toggleTwoDiam() {
+  twoDiamMode = document.getElementById('two-diam-toggle').checked;
+  document.getElementById('dim-single').style.display = twoDiamMode ? 'none' : '';
+  document.getElementById('dim-two').style.display    = twoDiamMode ? '' : 'none';
+  // Sync values when switching modes
+  if (twoDiamMode) {
+    const v = document.getElementById('dim-diam').value;
+    const h = document.getElementById('dim-h').value;
+    document.getElementById('dim-h2').value = h;
+    document.getElementById('dim-w').value  = v;
+    document.getElementById('dim-d').value  = v;
+  } else {
+    document.getElementById('dim-diam').value = document.getElementById('dim-w').value;
+    document.getElementById('dim-h').value    = document.getElementById('dim-h2').value;
+  }
+  // Toggle result grid columns
+  document.getElementById('res-diam-item').style.display = twoDiamMode ? 'none' : '';
+  document.getElementById('res-w-item').style.display    = twoDiamMode ? '' : 'none';
+  document.getElementById('res-d-item').style.display    = twoDiamMode ? '' : 'none';
+  document.getElementById('result-grid').style.gridTemplateColumns = twoDiamMode ? '1fr 1fr 1fr' : '1fr 1fr';
+  recalc();
+}
+
+function syncH() {
+  document.getElementById('dim-h').value = document.getElementById('dim-h2').value;
+}
+
+function getDims() {
+  if (twoDiamMode) {
+    return {
+      hRaw:   parseFloat(document.getElementById('dim-h2').value)   || 0,
+      wRaw:   parseFloat(document.getElementById('dim-w').value)    || 0,
+      dRaw:   parseFloat(document.getElementById('dim-d').value)    || 0,
+    };
+  }
+  const hRaw    = parseFloat(document.getElementById('dim-h').value)    || 0;
+  const diamRaw = parseFloat(document.getElementById('dim-diam').value) || 0;
+  return { hRaw, wRaw: diamRaw, dRaw: diamRaw };
+}
+
+function calcInteriorVolume(hIn, diamIn, wallIn, footIn, taper) {
+  const taperMult = { straight:1.0, base:0.65, shoulder:0.65, both:0.45 }[taper] || 1.0;
+  const innerH    = Math.max(0, hIn - footIn);
+  const innerDiam = Math.max(0, diamIn - 2 * wallIn);
+  const innerR    = innerDiam / 2;
+  const volIn3    = Math.PI * innerR * innerR * innerH * taperMult;
+  return { floz: volIn3 * 0.554113, ml: volIn3 * 16.387 };
+}
+
 function recalc() {
   const clay = getClay(selectedClayId);
-  const hRaw = parseFloat(document.getElementById('dim-h').value) || 0;
-  const wRaw = parseFloat(document.getElementById('dim-w').value) || 0;
-  const dRaw = parseFloat(document.getElementById('dim-d').value) || 0;
+  const { hRaw, wRaw, dRaw } = getDims();
   const wallRaw = parseFloat(document.getElementById('wall-thick').value) || 0.25;
   const footRaw = parseFloat(document.getElementById('foot-thick').value) || 0.375;
   const taper = document.getElementById('taper').value;
@@ -783,12 +854,16 @@ function recalc() {
 
   const hIn = toIn(hRaw), wIn = toIn(wRaw), dIn = toIn(dRaw);
   const wallIn = toIn(wallRaw), footIn = toIn(footRaw);
+  // For interior volume use the smaller of wIn/dIn as the effective diameter
+  const diamIn = twoDiamMode ? Math.min(wIn, dIn) : wIn;
 
   if (!clay || hIn <= 0 || wIn <= 0 || dIn <= 0) {
-    document.getElementById('res-h').textContent = '—';
-    document.getElementById('res-w').textContent = '—';
-    document.getElementById('res-d').textContent = '—';
-    document.getElementById('res-weight').textContent = '—';
+    document.getElementById('res-h').textContent    = '—';
+    document.getElementById('res-diam').textContent = '—';
+    document.getElementById('res-w').textContent    = '—';
+    document.getElementById('res-d').textContent    = '—';
+    document.getElementById('res-weight').textContent  = '—';
+    document.getElementById('res-volume').textContent  = '—';
     drawPot(formType, taper, hIn, wIn, wallIn, footIn);
     return;
   }
@@ -797,14 +872,18 @@ function recalc() {
   const tW = calcThrow(wIn, clay.shrinkage);
   const tD = calcThrow(dIn, clay.shrinkage);
   const weight = calcWeight(hIn, wIn, dIn, wallIn, footIn, taper);
+  const vol    = calcInteriorVolume(hIn, diamIn, wallIn, footIn, taper);
 
-  document.getElementById('res-h').textContent = fmt(fromIn(tH));
-  document.getElementById('res-w').textContent = fmt(fromIn(tW));
-  document.getElementById('res-d').textContent = fmt(fromIn(tD));
-  ['res-h-unit','res-w-unit','res-d-unit'].forEach(id => document.getElementById(id).textContent = unit);
+  document.getElementById('res-h').textContent    = fmt(fromIn(tH));
+  document.getElementById('res-diam').textContent = fmt(fromIn(tW));
+  document.getElementById('res-w').textContent    = fmt(fromIn(tW));
+  document.getElementById('res-d').textContent    = fmt(fromIn(tD));
+  ['res-h-unit','res-diam-unit','res-w-unit','res-d-unit'].forEach(id => document.getElementById(id).textContent = unit);
+
   const displayWeight = weightUnit === 'g' ? (weight * 453.592).toFixed(0) : weight.toFixed(2);
-  document.getElementById('res-weight').textContent = displayWeight;
+  document.getElementById('res-weight').textContent      = displayWeight;
   document.getElementById('res-weight-unit').textContent = weightUnit === 'g' ? 'g' : 'lbs';
+  document.getElementById('res-volume').textContent      = `~${vol.floz.toFixed(1)} fl oz / ${Math.round(vol.ml)} mL`;
 
   const absStr = clay.absorption != null ? clay.absorption + '% abs' : '';
   document.getElementById('clay-ref').innerHTML =
@@ -925,9 +1004,7 @@ async function saveCalculation() {
   const clay = getClay(selectedClayId);
   if (!clay) { showToast('Select a clay body first'); return; }
 
-  const hRaw = parseFloat(document.getElementById('dim-h').value) || 0;
-  const wRaw = parseFloat(document.getElementById('dim-w').value) || 0;
-  const dRaw = parseFloat(document.getElementById('dim-d').value) || 0;
+  const { hRaw, wRaw, dRaw } = getDims();
   const wallRaw = parseFloat(document.getElementById('wall-thick').value) || 0.25;
   const footRaw = parseFloat(document.getElementById('foot-thick').value) || 0.375;
   const taper = document.getElementById('taper').value;
@@ -946,11 +1023,16 @@ async function saveCalculation() {
     notes: document.getElementById('save-notes').value.trim(),
     clayId: selectedClayId,
     formType, taper, unit,
-    desiredHeight: hRaw, desiredWidth: wRaw, desiredDepth: dRaw,
+    twoDiamMode,
+    desiredHeight: hRaw,
+    ...(twoDiamMode
+      ? { desiredTopDiameter: wRaw, desiredBaseDiameter: dRaw,
+          throwingTopDiameter: parseFloat(fromIn(tW).toFixed(3)),
+          throwingBaseDiameter: parseFloat(fromIn(tD).toFixed(3)) }
+      : { desiredDiameter: wRaw,
+          throwingDiameter: parseFloat(fromIn(tW).toFixed(3)) }),
     wallThickness: wallRaw, footThickness: footRaw,
     throwingHeight: parseFloat(fromIn(tH).toFixed(3)),
-    throwingWidth:  parseFloat(fromIn(tW).toFixed(3)),
-    throwingDepth:  parseFloat(fromIn(tD).toFixed(3)),
     estimatedWeightLbs: parseFloat(weight.toFixed(3)),
     savedAt: new Date().toISOString()
   };
@@ -1014,8 +1096,15 @@ function renderSaved() {
         <div class="saved-card-title">${esc(c.projectName)}</div>
         <div class="saved-card-meta">${formLabel} · ${taperLabel}</div>
         <div class="saved-card-dims">
-          ${c.desiredHeight} × ${c.desiredWidth} × ${c.desiredDepth} ${u}
-          → <strong>${c.throwingHeight} × ${c.throwingWidth} × ${c.throwingDepth} ${u}</strong>
+          ${(()=>{
+            const isTwoDiam = c.twoDiamMode || (c.desiredTopDiameter != null);
+            if (isTwoDiam) {
+              return `${c.desiredHeight} × ⌀${c.desiredTopDiameter??c.desiredWidth}–⌀${c.desiredBaseDiameter??c.desiredDepth} ${u} → <strong>${c.throwingHeight} × ⌀${c.throwingTopDiameter??c.throwingWidth}–⌀${c.throwingBaseDiameter??c.throwingDepth} ${u}</strong>`;
+            }
+            const dDes  = c.desiredDiameter  ?? c.desiredWidth;
+            const dThrow = c.throwingDiameter ?? c.throwingWidth;
+            return `${c.desiredHeight} × ⌀${dDes} ${u} → <strong>${c.throwingHeight} × ⌀${dThrow} ${u}</strong>`;
+          })()}
         </div>
         <div class="saved-card-meta">${weightUnit === 'g' ? Math.round(c.estimatedWeightLbs * 453.592) + ' g' : c.estimatedWeightLbs + ' lbs'} estimated</div>
         ${c.notes ? `<div class="saved-card-notes">${esc(c.notes)}</div>` : ''}
@@ -1038,19 +1127,30 @@ function duplicateCalc(id) {
   if (!c) return;
 
   switchTab('calc');
-
   setUnit(c.unit || 'in');
   selectClay(c.clayId);
-  document.getElementById('form-type').value   = c.formType;
-  document.getElementById('taper').value        = c.taper;
-  document.getElementById('dim-h').value        = c.desiredHeight;
-  document.getElementById('dim-w').value        = c.desiredWidth;
-  document.getElementById('dim-d').value        = c.desiredDepth;
-  document.getElementById('wall-thick').value   = c.wallThickness;
-  document.getElementById('foot-thick').value   = c.footThickness;
+  document.getElementById('form-type').value = c.formType;
+  document.getElementById('taper').value     = c.taper;
+  document.getElementById('wall-thick').value = c.wallThickness;
+  document.getElementById('foot-thick').value = c.footThickness;
   document.getElementById('save-form-wrap').classList.remove('open');
-  document.getElementById('save-name').value    = c.projectName + ' (copy)';
-  document.getElementById('save-notes').value   = c.notes || '';
+  document.getElementById('save-name').value  = c.projectName + ' (copy)';
+  document.getElementById('save-notes').value = c.notes || '';
+
+  // Restore diameter mode
+  const isTwoDiam = c.twoDiamMode || (c.desiredTopDiameter != null);
+  document.getElementById('two-diam-toggle').checked = isTwoDiam;
+  // Apply mode toggle visually then set values
+  toggleTwoDiam();
+  if (isTwoDiam) {
+    document.getElementById('dim-h2').value = c.desiredHeight;
+    document.getElementById('dim-w').value  = c.desiredTopDiameter  ?? c.desiredWidth  ?? c.desiredDiameter ?? 3.5;
+    document.getElementById('dim-d').value  = c.desiredBaseDiameter ?? c.desiredDepth  ?? c.desiredDiameter ?? 3.5;
+    document.getElementById('dim-h').value  = c.desiredHeight;
+  } else {
+    document.getElementById('dim-h').value    = c.desiredHeight;
+    document.getElementById('dim-diam').value = c.desiredDiameter ?? c.desiredWidth ?? 3.5;
+  }
 
   recalc();
   window.scrollTo({ top: 0, behavior: 'smooth' });
