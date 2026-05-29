@@ -80,8 +80,32 @@
   header h1 { font-family: var(--font-serif); font-size: 22px; color: var(--olive-deep); }
 
   /* ── Tab content ── */
-  .tab-content { display: none; padding: 16px; }
+  .tab-content { display: none; padding: 16px; max-width: 1100px; margin: 0 auto; }
   .tab-content.active { display: block; }
+
+  /* ── Desktop two-column layout ── */
+  @media (min-width: 720px) {
+    body { padding-bottom: 0; }
+    header { position: sticky; top: 0; z-index: 10; }
+    nav {
+      position: fixed; top: 0; bottom: auto; left: 0; right: auto;
+      flex-direction: column; height: 100dvh; width: 72px;
+      border-top: none; border-right: 1px solid var(--sage-light);
+      padding-bottom: 0;
+    }
+    .nav-btn { flex-direction: column; font-size: 10px; }
+    header { padding-left: calc(72px + 16px); }
+    #pat-banner { padding-left: calc(72px + 16px); }
+    .tab-content { padding: 24px 24px 24px calc(72px + 24px); }
+    #tab-calc.active {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 28px;
+      align-items: start;
+      padding-left: calc(72px + 24px);
+    }
+    .calc-right { position: sticky; top: 80px; }
+  }
 
   /* ── Bottom Nav ── */
   nav {
@@ -301,131 +325,141 @@
 ════════════════════════════════════════ -->
 <div id="tab-calc" class="tab-content active">
 
-  <!-- Unit toggle -->
-  <div style="margin-bottom:14px;">
-    <div class="unit-toggle">
-      <button class="unit-btn active" id="unit-in" onclick="setUnit('in')">in</button>
-      <button class="unit-btn" id="unit-cm" onclick="setUnit('cm')">cm</button>
-    </div>
-  </div>
+  <!-- LEFT COLUMN -->
+  <div class="calc-left">
 
-  <!-- Clay selector -->
-  <div class="field">
-    <label>Clay Body</label>
-    <div class="clay-selector-wrap">
-      <input type="text" id="clay-search" placeholder="Search clays…" autocomplete="off"
-        onfocus="openDropdown()" oninput="filterDropdown()" onblur="scheduleClose()">
-      <div class="clay-dropdown" id="clay-dropdown"></div>
-    </div>
-  </div>
-
-  <!-- Form type -->
-  <div class="field">
-    <label>Form Type</label>
-    <select id="form-type" onchange="recalc()">
-      <option value="cylinder">Cylinder / Mug</option>
-      <option value="bowl">Bowl</option>
-      <option value="plate">Plate / Shallow Dish</option>
-      <option value="vase">Vase</option>
-      <option value="jar">Lidded Jar</option>
-      <option value="tumbler">Tumbler</option>
-    </select>
-  </div>
-
-  <!-- Desired dimensions -->
-  <div class="field">
-    <label>Desired Dimensions (<span id="dim-unit-label">in</span>)</label>
-    <div class="dim-row">
-      <div class="field"><label>Height</label><input type="number" id="dim-h" value="4" min="0" step="0.25" oninput="recalc()"></div>
-      <div class="field"><label>Width</label><input type="number" id="dim-w" value="3.5" min="0" step="0.25" oninput="recalc()"></div>
-      <div class="field"><label>Depth</label><input type="number" id="dim-d" value="3.5" min="0" step="0.25" oninput="recalc()"></div>
-    </div>
-  </div>
-
-  <!-- Taper -->
-  <div class="field">
-    <label>Taper</label>
-    <select id="taper" onchange="recalc()">
-      <option value="straight">Straight-walled</option>
-      <option value="base">Tapers at base</option>
-      <option value="shoulder">Tapers at shoulder</option>
-      <option value="both">Tapers at both</option>
-    </select>
-  </div>
-
-  <!-- Wall & foot thickness -->
-  <div class="two-col" style="margin-bottom:14px;">
-    <div class="field">
-      <label>Wall Thickness (<span class="wall-unit-label">in</span>)</label>
-      <input type="number" id="wall-thick" value="0.25" min="0.05" step="0.05" oninput="recalc()">
-    </div>
-    <div class="field">
-      <label>Foot Thickness (<span class="wall-unit-label">in</span>)</label>
-      <input type="number" id="foot-thick" value="0.375" min="0.05" step="0.05" oninput="recalc()">
-    </div>
-  </div>
-
-  <!-- SVG Illustration -->
-  <div class="illustration-wrap">
-    <svg id="pot-svg" viewBox="0 0 160 220" xmlns="http://www.w3.org/2000/svg">
-      <g id="pot-drawing"></g>
-    </svg>
-  </div>
-
-  <!-- Results: Throwing dimensions -->
-  <div class="card">
-    <div class="card-title">Throwing Dimensions</div>
-    <div class="result-grid">
-      <div class="result-item">
-        <div class="result-label">Height</div>
-        <div class="result-value" id="res-h">—</div>
-        <div class="result-unit" id="res-h-unit">in</div>
-      </div>
-      <div class="result-item">
-        <div class="result-label">Width</div>
-        <div class="result-value" id="res-w">—</div>
-        <div class="result-unit" id="res-w-unit">in</div>
-      </div>
-      <div class="result-item">
-        <div class="result-label">Depth</div>
-        <div class="result-value" id="res-d">—</div>
-        <div class="result-unit" id="res-d-unit">in</div>
-      </div>
-    </div>
-    <div class="clay-ref" id="clay-ref">Select a clay body above</div>
-  </div>
-
-  <!-- Results: Clay weight -->
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <div class="card-title" style="margin-bottom:0;">Estimated Clay Weight</div>
+    <!-- Unit toggle -->
+    <div style="margin-bottom:14px;">
       <div class="unit-toggle">
-        <button class="unit-btn active" id="weight-lb" onclick="setWeightUnit('lb')">lb</button>
-        <button class="unit-btn" id="weight-g" onclick="setWeightUnit('g')">g</button>
+        <button class="unit-btn active" id="unit-in" onclick="setUnit('in')">in</button>
+        <button class="unit-btn" id="unit-cm" onclick="setUnit('cm')">cm</button>
       </div>
     </div>
-    <div class="weight-value" id="res-weight">—</div>
-    <div class="result-unit" id="res-weight-unit">lbs</div>
-    <div class="weight-note">approximate — includes 15% trim loss</div>
-  </div>
 
-  <!-- Save button -->
-  <button class="btn-primary" onclick="toggleSaveForm()">Save this calculation</button>
+    <!-- Clay selector -->
+    <div class="field">
+      <label>Clay Body</label>
+      <div class="clay-selector-wrap">
+        <input type="text" id="clay-search" placeholder="Search clays…" autocomplete="off"
+          onfocus="openDropdown()" oninput="filterDropdown()" onblur="scheduleClose()">
+        <div class="clay-dropdown" id="clay-dropdown"></div>
+      </div>
+    </div>
 
-  <!-- Inline save form -->
-  <div id="save-form-wrap" class="card" style="margin-top:12px;">
-    <div class="card-title">Save Calculation</div>
+    <!-- Form type -->
     <div class="field">
-      <label>Project Name *</label>
-      <input type="text" id="save-name" placeholder="e.g. Farmers market mugs">
+      <label>Form Type</label>
+      <select id="form-type" onchange="recalc()">
+        <option value="cylinder">Cylinder / Mug</option>
+        <option value="bowl">Bowl</option>
+        <option value="plate">Plate / Shallow Dish</option>
+        <option value="vase">Vase</option>
+        <option value="jar">Lidded Jar</option>
+        <option value="tumbler">Tumbler</option>
+      </select>
     </div>
+
+    <!-- Desired dimensions -->
     <div class="field">
-      <label>Notes</label>
-      <textarea id="save-notes" placeholder="Optional notes…"></textarea>
+      <label>Desired Dimensions (<span id="dim-unit-label">in</span>)</label>
+      <div class="dim-row">
+        <div class="field"><label>Height</label><input type="number" id="dim-h" value="4" min="0" step="0.25" oninput="recalc()"></div>
+        <div class="field"><label>Width</label><input type="number" id="dim-w" value="3.5" min="0" step="0.25" oninput="recalc()"></div>
+        <div class="field"><label>Depth</label><input type="number" id="dim-d" value="3.5" min="0" step="0.25" oninput="recalc()"></div>
+      </div>
     </div>
-    <button class="btn-primary" id="save-confirm-btn" onclick="saveCalculation()">Save to GitHub</button>
-    <button class="btn-secondary" onclick="toggleSaveForm()">Cancel</button>
-  </div>
+
+    <!-- Taper -->
+    <div class="field">
+      <label>Taper</label>
+      <select id="taper" onchange="recalc()">
+        <option value="straight">Straight-walled</option>
+        <option value="base">Tapers at base</option>
+        <option value="shoulder">Tapers at shoulder</option>
+        <option value="both">Tapers at both</option>
+      </select>
+    </div>
+
+    <!-- Wall & foot thickness -->
+    <div class="two-col" style="margin-bottom:14px;">
+      <div class="field">
+        <label>Wall Thickness (<span class="wall-unit-label">in</span>)</label>
+        <input type="number" id="wall-thick" value="0.25" min="0.05" step="0.05" oninput="recalc()">
+      </div>
+      <div class="field">
+        <label>Foot Thickness (<span class="wall-unit-label">in</span>)</label>
+        <input type="number" id="foot-thick" value="0.375" min="0.05" step="0.05" oninput="recalc()">
+      </div>
+    </div>
+
+    <!-- Save button -->
+    <button class="btn-primary" onclick="toggleSaveForm()">Save this calculation</button>
+
+    <!-- Inline save form -->
+    <div id="save-form-wrap" class="card" style="margin-top:12px;">
+      <div class="card-title">Save Calculation</div>
+      <div class="field">
+        <label>Project Name *</label>
+        <input type="text" id="save-name" placeholder="e.g. Farmers market mugs">
+      </div>
+      <div class="field">
+        <label>Notes</label>
+        <textarea id="save-notes" placeholder="Optional notes…"></textarea>
+      </div>
+      <button class="btn-primary" id="save-confirm-btn" onclick="saveCalculation()">Save to GitHub</button>
+      <button class="btn-secondary" onclick="toggleSaveForm()">Cancel</button>
+    </div>
+
+  </div><!-- /calc-left -->
+
+  <!-- RIGHT COLUMN -->
+  <div class="calc-right">
+
+    <!-- SVG Illustration -->
+    <div class="illustration-wrap">
+      <svg id="pot-svg" viewBox="0 0 160 220" xmlns="http://www.w3.org/2000/svg">
+        <g id="pot-drawing"></g>
+      </svg>
+    </div>
+
+    <!-- Results: Throwing dimensions -->
+    <div class="card">
+      <div class="card-title">Throwing Dimensions</div>
+      <div class="result-grid">
+        <div class="result-item">
+          <div class="result-label">Height</div>
+          <div class="result-value" id="res-h">—</div>
+          <div class="result-unit" id="res-h-unit">in</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Width</div>
+          <div class="result-value" id="res-w">—</div>
+          <div class="result-unit" id="res-w-unit">in</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Depth</div>
+          <div class="result-value" id="res-d">—</div>
+          <div class="result-unit" id="res-d-unit">in</div>
+        </div>
+      </div>
+      <div class="clay-ref" id="clay-ref">Select a clay body above</div>
+    </div>
+
+    <!-- Results: Clay weight -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="card-title" style="margin-bottom:0;">Estimated Clay Weight</div>
+        <div class="unit-toggle">
+          <button class="unit-btn active" id="weight-lb" onclick="setWeightUnit('lb')">lb</button>
+          <button class="unit-btn" id="weight-g" onclick="setWeightUnit('g')">g</button>
+        </div>
+      </div>
+      <div class="weight-value" id="res-weight">—</div>
+      <div class="result-unit" id="res-weight-unit">lbs</div>
+      <div class="weight-note">approximate — includes 15% trim loss</div>
+    </div>
+
+  </div><!-- /calc-right -->
 
 </div><!-- /tab-calc -->
 
