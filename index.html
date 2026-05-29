@@ -397,9 +397,15 @@
 
   <!-- Results: Clay weight -->
   <div class="card">
-    <div class="card-title">Estimated Clay Weight</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div class="card-title" style="margin-bottom:0;">Estimated Clay Weight</div>
+      <div class="unit-toggle">
+        <button class="unit-btn active" id="weight-lb" onclick="setWeightUnit('lb')">lb</button>
+        <button class="unit-btn" id="weight-g" onclick="setWeightUnit('g')">g</button>
+      </div>
+    </div>
     <div class="weight-value" id="res-weight">—</div>
-    <div class="result-unit">lbs</div>
+    <div class="result-unit" id="res-weight-unit">lbs</div>
     <div class="weight-note">approximate — includes 15% trim loss</div>
   </div>
 
@@ -520,6 +526,7 @@ let selectedClayId = 'laguna-speckled-buff';
 let unit = 'in';
 let newImageBase64 = null;
 let deleteConfirmId = null;
+let weightUnit = 'lb';
 
 function getPat() { return localStorage.getItem('clay_calculator_pat') || ''; }
 function savePat() {
@@ -608,6 +615,13 @@ function setUnit(u) {
       el.value = (parseFloat(el.value) * factor).toFixed(2);
     });
   }
+  recalc();
+}
+
+function setWeightUnit(u) {
+  weightUnit = u;
+  document.getElementById('weight-lb').classList.toggle('active', u === 'lb');
+  document.getElementById('weight-g').classList.toggle('active', u === 'g');
   recalc();
 }
 
@@ -707,7 +721,9 @@ function recalc() {
   document.getElementById('res-w').textContent = fmt(fromIn(tW));
   document.getElementById('res-d').textContent = fmt(fromIn(tD));
   ['res-h-unit','res-w-unit','res-d-unit'].forEach(id => document.getElementById(id).textContent = unit);
-  document.getElementById('res-weight').textContent = weight.toFixed(2);
+  const displayWeight = weightUnit === 'g' ? (weight * 453.592).toFixed(0) : weight.toFixed(2);
+  document.getElementById('res-weight').textContent = displayWeight;
+  document.getElementById('res-weight-unit').textContent = weightUnit === 'g' ? 'g' : 'lbs';
 
   const absStr = clay.absorption != null ? clay.absorption + '% abs' : '';
   document.getElementById('clay-ref').innerHTML =
@@ -920,7 +936,7 @@ function renderSaved() {
           ${c.desiredHeight} × ${c.desiredWidth} × ${c.desiredDepth} ${u}
           → <strong>${c.throwingHeight} × ${c.throwingWidth} × ${c.throwingDepth} ${u}</strong>
         </div>
-        <div class="saved-card-meta">${c.estimatedWeightLbs} lbs estimated</div>
+        <div class="saved-card-meta">${weightUnit === 'g' ? Math.round(c.estimatedWeightLbs * 453.592) + ' g' : c.estimatedWeightLbs + ' lbs'} estimated</div>
         ${c.notes ? `<div class="saved-card-notes">${esc(c.notes)}</div>` : ''}
         <div class="saved-card-footer">
           <span class="saved-card-date">${dateStr}</span>
