@@ -684,18 +684,34 @@ function renderDropdown(filter) {
 }
 
 function openDropdown() {
-  renderDropdown(document.getElementById('clay-search').value);
+  const input = document.getElementById('clay-search');
+  input._savedValue = input.value;
+  input.value = '';
+  input.placeholder = input._savedValue || 'Search clays…';
+  renderDropdown('');
   document.getElementById('clay-dropdown').classList.add('open');
 }
 function filterDropdown() {
   renderDropdown(document.getElementById('clay-search').value);
   document.getElementById('clay-dropdown').classList.add('open');
 }
-function scheduleClose() { setTimeout(() => document.getElementById('clay-dropdown').classList.remove('open'), 200); }
+function scheduleClose() {
+  setTimeout(() => {
+    document.getElementById('clay-dropdown').classList.remove('open');
+    const input = document.getElementById('clay-search');
+    if (input.value === '' && input._savedValue) {
+      input.value = input._savedValue;
+      input.placeholder = 'Search clays…';
+    }
+  }, 200);
+}
 function selectClay(id) {
   selectedClayId = id;
   const clay = getClay(id);
-  document.getElementById('clay-search').value = clay ? clay.brand + ' — ' + clay.name : '';
+  const input = document.getElementById('clay-search');
+  input.value = clay ? clay.brand + ' — ' + clay.name : '';
+  input._savedValue = input.value;
+  input.placeholder = 'Search clays…';
   document.getElementById('clay-dropdown').classList.remove('open');
   recalc();
 }
