@@ -227,7 +227,10 @@
   .clay-group-header img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
   .clay-group-header span { font-weight: 600; font-size: 15px; }
 
-  .saved-card { background: var(--surface); border-radius: var(--radius-card); border: 1px solid var(--sage-light); padding: 14px; margin-bottom: 10px; }
+  .saved-card { background: var(--surface); border-radius: var(--radius-card); border: 1px solid var(--sage-light); padding: 14px; margin-bottom: 10px; display: flex; gap: 14px; align-items: flex-start; }
+  .saved-card-thumb { flex-shrink: 0; width: 52px; display: flex; justify-content: center; padding-top: 2px; }
+  .saved-card-thumb svg { width: 52px; height: 68px; }
+  .saved-card-body { flex: 1; min-width: 0; }
   .saved-card-title { font-weight: 600; font-size: 15px; margin-bottom: 6px; }
   .saved-card-meta { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
   .saved-card-dims { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
@@ -1132,26 +1135,31 @@ function renderSaved() {
       const taperLabel = { straight:'Straight-walled', base:'Tapers at base', shoulder:'Tapers at shoulder', both:'Tapers at both' }[c.taper] || c.taper;
       const formLabel = { cylinder:'Cylinder/Mug', bowl:'Bowl', plate:'Plate/Shallow Dish', vase:'Vase', jar:'Lidded Jar', tumbler:'Tumbler' }[c.formType] || c.formType;
       html += `<div class="saved-card">
-        <div class="saved-card-title">${esc(c.projectName)}</div>
-        <div class="saved-card-meta">${formLabel} · ${taperLabel}</div>
-        <div class="saved-card-dims">
-          ${(()=>{
-            const isTwoDiam = c.twoDiamMode || (c.desiredTopDiameter != null);
-            if (isTwoDiam) {
-              return `${c.desiredHeight} × ⌀${c.desiredTopDiameter??c.desiredWidth}–⌀${c.desiredBaseDiameter??c.desiredDepth} ${u} → <strong>${c.throwingHeight} × ⌀${c.throwingTopDiameter??c.throwingWidth}–⌀${c.throwingBaseDiameter??c.throwingDepth} ${u}</strong>`;
-            }
-            const dDes  = c.desiredDiameter  ?? c.desiredWidth;
-            const dThrow = c.throwingDiameter ?? c.throwingWidth;
-            return `${c.desiredHeight} × ⌀${dDes} ${u} → <strong>${c.throwingHeight} × ⌀${dThrow} ${u}</strong>`;
-          })()}
+        <div class="saved-card-thumb">
+          <svg viewBox="0 0 60 80" id="sthumb-${c.id}"></svg>
         </div>
-        <div class="saved-card-meta">${weightUnit === 'g' ? Math.round(c.estimatedWeightLbs * 453.592) + ' g' : c.estimatedWeightLbs + ' lbs'} estimated</div>
-        ${c.notes ? `<div class="saved-card-notes">${esc(c.notes)}</div>` : ''}
-        <div class="saved-card-footer">
-          <span class="saved-card-date">${dateStr}</span>
-          <div style="display:flex;gap:8px;">
-            <button class="btn-secondary" style="width:auto;padding:6px 12px;font-size:13px;margin-top:0;" onclick="duplicateCalc('${c.id}')">⧉ Duplicate</button>
-            <button class="btn-danger" onclick="confirmDelete('${c.id}', this)">🗑 Delete</button>
+        <div class="saved-card-body">
+          <div class="saved-card-title">${esc(c.projectName)}</div>
+          <div class="saved-card-meta">${formLabel} · ${taperLabel}</div>
+          <div class="saved-card-dims">
+            ${(()=>{
+              const isTwoDiam = c.twoDiamMode || (c.desiredTopDiameter != null);
+              if (isTwoDiam) {
+                return `${c.desiredHeight} × ⌀${c.desiredTopDiameter??c.desiredWidth}–⌀${c.desiredBaseDiameter??c.desiredDepth} ${u} → <strong>${c.throwingHeight} × ⌀${c.throwingTopDiameter??c.throwingWidth}–⌀${c.throwingBaseDiameter??c.throwingDepth} ${u}</strong>`;
+              }
+              const dDes   = c.desiredDiameter  ?? c.desiredWidth;
+              const dThrow = c.throwingDiameter ?? c.throwingWidth;
+              return `${c.desiredHeight} × ⌀${dDes} ${u} → <strong>${c.throwingHeight} × ⌀${dThrow} ${u}</strong>`;
+            })()}
+          </div>
+          <div class="saved-card-meta">${weightUnit === 'g' ? Math.round(c.estimatedWeightLbs * 453.592) + ' g' : c.estimatedWeightLbs + ' lbs'} estimated</div>
+          ${c.notes ? `<div class="saved-card-notes">${esc(c.notes)}</div>` : ''}
+          <div class="saved-card-footer">
+            <span class="saved-card-date">${dateStr}</span>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-secondary" style="width:auto;padding:6px 12px;font-size:13px;margin-top:0;" onclick="duplicateCalc('${c.id}')">⧉ Duplicate</button>
+              <button class="btn-danger" onclick="confirmDelete('${c.id}', this)">🗑 Delete</button>
+            </div>
           </div>
         </div>
       </div>`;
@@ -1159,6 +1167,15 @@ function renderSaved() {
     html += '</div>';
   });
   el.innerHTML = html;
+  // Draw thumbnails
+  savedCalculations.forEach(c => {
+    const svgEl = document.getElementById('sthumb-' + c.id);
+    if (!svgEl) return;
+    const profile = getFormProfile(c.formType, c.taper);
+    const h    = c.desiredHeight || 4;
+    const diam = c.desiredDiameter ?? c.desiredWidth ?? 3.5;
+    drawPresetSvg(svgEl, profile, h, diam);
+  });
 }
 
 function duplicateCalc(id) {
@@ -1412,6 +1429,21 @@ function drawPresetSvg(svgEl, profile, hIn, diamIn) {
   svgEl.innerHTML = `
     <path d="${full}" fill="#E8E4D8" stroke="#4A5240" stroke-width="1.5" stroke-linejoin="round"/>
     <line x1="${cx-bW+3}" y1="${bot}" x2="${cx+bW-3}" y2="${bot}" stroke="#4A5240" stroke-width="1.5" stroke-linecap="round"/>`;
+}
+
+function getFormProfile(formType, taper) {
+  const base = {
+    cylinder: { topR:0.95, midR:1,    botR:0.9,  midY:0.5  },
+    bowl:     { topR:1,    midR:0.85, botR:0.28, midY:0.55 },
+    plate:    { topR:1,    midR:0.98, botR:0.65, midY:0.35 },
+    vase:     { topR:0.55, midR:1,    botR:0.45, midY:0.5  },
+    jar:      { topR:0.7,  midR:1,    botR:0.65, midY:0.45 },
+    tumbler:  { topR:0.9,  midR:0.85, botR:0.75, midY:0.5  },
+  }[formType] || { topR:0.95, midR:1, botR:0.9, midY:0.5 };
+  const p = { ...base };
+  if (taper === 'base' || taper === 'both')     p.botR = Math.max(0.15, p.botR * 0.6);
+  if (taper === 'shoulder' || taper === 'both') p.topR = Math.max(0.15, p.topR * 0.7);
+  return p;
 }
 
 function renderPresets() {
