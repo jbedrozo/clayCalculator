@@ -265,6 +265,7 @@
   }
   .badge-type { background: var(--surface-alt); color: var(--text-secondary); }
   .badge-custom { background: var(--terra-tint); color: var(--terra-deep); }
+  .badge-default { background: var(--sage-light); color: var(--olive-deep); }
   .clay-card-actions { display: flex; flex-direction: column; gap: 4px; }
 
   .add-clay-section { margin-top: 20px; }
@@ -1253,22 +1254,39 @@ function exportJSON() {
 // ═══════════════════════════════════════
 // LIBRARY TAB
 // ═══════════════════════════════════════
+function getDefaultClay() {
+  return localStorage.getItem('clay_calculator_preferred') || 'laguna-speckled-buff';
+}
+
+function setDefaultClay(id) {
+  localStorage.setItem('clay_calculator_preferred', id);
+  renderLibrary();
+  selectClay(id);
+  showToast('Default clay updated');
+}
+
 function renderLibrary() {
   const el = document.getElementById('clay-list');
   const clays = allClays();
+  const defaultId = getDefaultClay();
   let html = '';
   clays.forEach(c => {
     const imgHtml = c.image
       ? `<img src="${c.image}" alt="${c.name}">`
       : `<div class="clay-card-img-placeholder">🏺</div>`;
     const absStr = c.absorption != null ? `${c.absorption}% abs · ` : '';
+    const isDefault = c.id === defaultId;
     const deleteBtn = c.custom ? `<button class="btn-danger" onclick="deleteCustomClay('${c.id}')">🗑</button>` : '';
+    const defaultBtn = isDefault
+      ? `<button class="btn-secondary" style="width:auto;padding:4px 10px;font-size:12px;" disabled>★ Default</button>`
+      : `<button class="btn-secondary" style="width:auto;padding:4px 10px;font-size:12px;" onclick="setDefaultClay('${c.id}')">☆ Set default</button>`;
     html += `<div class="clay-card">
       ${imgHtml}
       <div class="clay-card-info">
         <div class="clay-card-name">
           ${esc(c.name)}
           ${c.custom ? '<span class="badge badge-custom">custom</span>' : ''}
+          ${isDefault ? '<span class="badge badge-default">default</span>' : ''}
         </div>
         <div class="clay-card-brand">${esc(c.brand)}${c.sku ? ' · ' + c.sku : ''}</div>
         <div>
@@ -1277,7 +1295,10 @@ function renderLibrary() {
         </div>
         <div class="clay-card-stats">${c.shrinkage}% shrinkage · ${absStr}${c.color}</div>
       </div>
-      ${deleteBtn ? `<div class="clay-card-actions">${deleteBtn}</div>` : ''}
+      <div class="clay-card-actions">
+        ${defaultBtn}
+        ${deleteBtn}
+      </div>
     </div>`;
   });
   el.innerHTML = html;
@@ -1497,7 +1518,7 @@ function applyPreset(id) {
     document.getElementById('pat-banner').classList.add('visible');
   }
   // Set default clay
-  selectClay('laguna-speckled-buff');
+  selectClay(getDefaultClay());
   renderDropdown('');
   renderLibrary();
   renderPresets();
