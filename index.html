@@ -277,6 +277,37 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* ── Presets carousel ── */
+  .calc-presets {
+    margin-top: 24px; padding-top: 20px;
+    border-top: 1px solid var(--sage-light);
+  }
+  .presets-label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--text-muted); margin-bottom: 10px;
+  }
+  .presets-carousel {
+    display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px;
+    scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+  }
+  .presets-carousel::-webkit-scrollbar { height: 4px; }
+  .presets-carousel::-webkit-scrollbar-thumb { background: var(--sage-light); border-radius: 2px; }
+  .preset-card {
+    flex-shrink: 0; width: 108px; scroll-snap-align: start;
+    background: var(--surface); border: 1.5px solid var(--sage-light);
+    border-radius: var(--radius-card); padding: 10px 8px 10px;
+    cursor: pointer; text-align: center; font-family: var(--font-sans);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .preset-card:hover  { border-color: var(--olive-mid); }
+  .preset-card.active { border-color: var(--olive-deep); box-shadow: 0 0 0 2px color-mix(in srgb, var(--olive-deep) 25%, transparent); }
+  .preset-svg  { width: 60px; height: 80px; display: block; margin: 0 auto 8px; overflow: visible; }
+  .preset-name { font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; line-height: 1.3; }
+  .preset-dims { font-size: 10px; color: var(--text-muted); }
+  @media (min-width: 720px) {
+    .calc-presets { grid-column: 1 / -1; }
+  }
+
   /* ── Desktop layout ── */
   @media (min-width: 720px) {
     :root { --header-h: 57px; --sidebar-w: 88px; }
@@ -513,6 +544,12 @@
     </div>
 
   </div><!-- /calc-right -->
+
+  <!-- PRESETS CAROUSEL -->
+  <div class="calc-presets">
+    <div class="presets-label">Inspiration — click to load</div>
+    <div class="presets-carousel" id="presets-carousel"></div>
+  </div>
 
 </div><!-- /tab-calc -->
 
@@ -1316,6 +1353,111 @@ function esc(s) {
 // ═══════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════
+// ═══════════════════════════════════════
+// PRESETS
+// ═══════════════════════════════════════
+const PRESETS = [
+  { id:'mug-12oz',      name:'12 oz Mug',      formType:'cylinder', taper:'straight', h:3.75, diam:3.25, wall:0.25,  foot:0.375, profile:{ topR:0.95, midR:1,    botR:0.9,  midY:0.5  } },
+  { id:'mug-16oz',      name:'16 oz Mug',      formType:'cylinder', taper:'straight', h:4.5,  diam:3.5,  wall:0.25,  foot:0.375, profile:{ topR:0.95, midR:1,    botR:0.9,  midY:0.5  } },
+  { id:'planter-4in',   name:'4″ Planter',     formType:'cylinder', taper:'base',     h:4,    diam:4,    wall:0.3,   foot:0.5,   profile:{ topR:1,    midR:0.9,  botR:0.55, midY:0.4  } },
+  { id:'oil-bottle',    name:'Oil Bottle',      formType:'vase',     taper:'shoulder', h:7,    diam:3,    wall:0.2,   foot:0.375, profile:{ topR:0.25, midR:1,    botR:0.5,  midY:0.62 } },
+  { id:'matcha-bowl',   name:'Matcha Bowl',     formType:'bowl',     taper:'base',     h:3,    diam:5.5,  wall:0.25,  foot:0.375, profile:{ topR:1,    midR:0.85, botR:0.28, midY:0.55 } },
+  { id:'whisk-holder',  name:'Whisk Holder',    formType:'vase',     taper:'both',     h:4,    diam:2.5,  wall:0.25,  foot:0.375, profile:{ topR:0.5,  midR:1,    botR:0.45, midY:0.45 } },
+  { id:'spoon-rest',    name:'Spoon Rest',      formType:'plate',    taper:'straight', h:0.75, diam:5,    wall:0.2,   foot:0.2,   profile:{ topR:1,    midR:0.98, botR:0.7,  midY:0.35 } },
+  { id:'ring-holder',   name:'Ring Holder',     formType:'plate',    taper:'straight', h:1.5,  diam:5,    wall:0.25,  foot:0.25,  profile:{ style:'ring-holder' } },
+];
+
+function drawPresetSvg(svgEl, profile, hIn, diamIn) {
+  const VW = 60, VH = 80, pad = 6;
+  const maxH = VH - pad * 2, maxW = VW - pad * 2;
+
+  // Ring holder: wide dish + raised center cone
+  if (profile.style === 'ring-holder') {
+    const cx = VW / 2;
+    const dishH = VH * 0.28, dishBot = VH - pad, dishTop = dishBot - dishH;
+    const dw = maxW / 2;
+    // cone: narrow, tall, centered
+    const coneH = VH * 0.55, coneBot = dishTop + 4, coneTop = coneBot - coneH;
+    const cr = dw * 0.15;
+    svgEl.innerHTML = `
+      <!-- dish -->
+      <path d="M ${cx-dw} ${dishTop} C ${cx-dw} ${dishTop+dishH*0.1} ${cx-dw*0.6} ${dishBot-2} ${cx-dw*0.55} ${dishBot}
+               L ${cx+dw*0.55} ${dishBot} C ${cx+dw*0.6} ${dishBot-2} ${cx+dw} ${dishTop+dishH*0.1} ${cx+dw} ${dishTop} Z"
+            fill="#E8E4D8" stroke="#4A5240" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- cone -->
+      <path d="M ${cx-cr} ${coneTop} C ${cx-cr} ${coneTop+coneH*0.1} ${cx-cr*1.8} ${coneBot-4} ${cx-cr*1.8} ${coneBot}
+               L ${cx+cr*1.8} ${coneBot} C ${cx+cr*1.8} ${coneBot-4} ${cx+cr} ${coneTop+coneH*0.1} ${cx+cr} ${coneTop} Z"
+            fill="#E8E4D8" stroke="#4A5240" stroke-width="1.5" stroke-linejoin="round"/>
+      <line x1="${cx-dw+4}" y1="${dishBot}" x2="${cx+dw-4}" y2="${dishBot}" stroke="#4A5240" stroke-width="1.5" stroke-linecap="round"/>`;
+    return;
+  }
+
+  const ratio = Math.min(1, hIn / Math.max(diamIn, 0.1));
+  const drawH = Math.min(maxH, maxH * Math.min(1, hIn / 8));
+  const drawW = Math.min(maxW, drawH / Math.max(0.2, ratio));
+  const cx = VW / 2, hw = drawW / 2;
+  const top = pad + (maxH - drawH) / 2, bot = top + drawH;
+  const { topR, midR, botR, midY = 0.5 } = profile;
+  const tW = hw * topR, mW = hw * midR, bW = hw * botR;
+  const mYpx = top + drawH * midY;
+
+  function side(s) {
+    return `M ${cx - tW*s} ${top}
+      C ${cx - tW*s} ${top + drawH*0.12}, ${cx - mW*s} ${mYpx - drawH*0.1}, ${cx - mW*s} ${mYpx}
+      C ${cx - mW*s} ${mYpx + drawH*0.1}, ${cx - bW*s} ${bot - drawH*0.06}, ${cx - bW*s} ${bot}`;
+  }
+  const full = `${side(1)} L ${cx+bW} ${bot} ${side(-1).replace('M','').trimStart()} Z`;
+  svgEl.innerHTML = `
+    <path d="${full}" fill="#E8E4D8" stroke="#4A5240" stroke-width="1.5" stroke-linejoin="round"/>
+    <line x1="${cx-bW+3}" y1="${bot}" x2="${cx+bW-3}" y2="${bot}" stroke="#4A5240" stroke-width="1.5" stroke-linecap="round"/>`;
+}
+
+function renderPresets() {
+  const wrap = document.getElementById('presets-carousel');
+  wrap.innerHTML = PRESETS.map(p => {
+    const dimsLabel = p.id === 'ring-holder' || p.id === 'spoon-rest'
+      ? `H ${p.h}" · Ø ${p.diam}"`
+      : `H ${p.h}" · Ø ${p.diam}"`;
+    return `<button class="preset-card" data-id="${p.id}" onclick="applyPreset('${p.id}')">
+      <svg class="preset-svg" viewBox="0 0 60 80" id="psvg-${p.id}"></svg>
+      <div class="preset-name">${p.name}</div>
+      <div class="preset-dims">${dimsLabel}</div>
+    </button>`;
+  }).join('');
+  // Draw each SVG after DOM is ready
+  PRESETS.forEach(p => {
+    const svgEl = document.getElementById('psvg-' + p.id);
+    if (svgEl) drawPresetSvg(svgEl, p.profile, p.h, p.diam);
+  });
+}
+
+function applyPreset(id) {
+  const p = PRESETS.find(x => x.id === id);
+  if (!p) return;
+  // Reset two-diam mode to single
+  document.getElementById('two-diam-toggle').checked = false;
+  twoDiamMode = false;
+  document.getElementById('dim-single').style.display = '';
+  document.getElementById('dim-two').style.display    = 'none';
+  document.getElementById('res-diam-item').style.display = '';
+  document.getElementById('res-w-item').style.display    = 'none';
+  document.getElementById('res-d-item').style.display    = 'none';
+  document.getElementById('result-grid').style.gridTemplateColumns = '1fr 1fr';
+  // Fill inputs
+  setUnit('in');
+  document.getElementById('form-type').value  = p.formType;
+  document.getElementById('taper').value      = p.taper;
+  document.getElementById('dim-h').value      = p.h;
+  document.getElementById('dim-diam').value   = p.diam;
+  document.getElementById('wall-thick').value = p.wall;
+  document.getElementById('foot-thick').value = p.foot;
+  document.getElementById('save-name').value  = p.name;
+  recalc();
+  document.querySelectorAll('.preset-card').forEach(el =>
+    el.classList.toggle('active', el.dataset.id === id));
+  if (window.innerWidth < 720) window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 (function init() {
   if (!getPat()) {
     document.getElementById('pat-banner').classList.add('visible');
@@ -1324,6 +1466,7 @@ function esc(s) {
   selectClay('laguna-speckled-buff');
   renderDropdown('');
   renderLibrary();
+  renderPresets();
   recalc();
   loadFromGitHub();
 })();
