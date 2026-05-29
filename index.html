@@ -73,44 +73,15 @@
 
   /* ── App header ── */
   header {
-    padding: 18px 16px 10px;
+    padding: 14px 16px;
     border-bottom: 1px solid var(--sage-light);
     background: var(--surface);
   }
   header h1 { font-family: var(--font-serif); font-size: 22px; color: var(--olive-deep); }
 
   /* ── Tab content ── */
-  .tab-content { display: none; padding: 16px; max-width: 1100px; margin: 0 auto; }
+  .tab-content { display: none; padding: 16px; }
   .tab-content.active { display: block; }
-
-  /* ── Desktop two-column layout ── */
-  @media (min-width: 720px) {
-    body { padding-bottom: 0; }
-    header { position: sticky; top: 0; z-index: 10; }
-    nav {
-      position: fixed; top: 0; bottom: auto; left: 0; right: auto;
-      flex-direction: column; justify-content: flex-start; gap: 4px;
-      height: 100dvh; width: 80px;
-      border-top: none; border-right: 1px solid var(--sage-light);
-      padding: 16px 0; overflow: hidden;
-    }
-    .nav-btn {
-      flex-direction: column; font-size: 10px; width: 100%;
-      padding: 10px 4px; gap: 4px;
-    }
-    .nav-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
-    header { padding-left: calc(80px + 16px); }
-    #pat-banner { padding-left: calc(80px + 16px); }
-    .tab-content { padding: 24px 24px 24px calc(80px + 24px); }
-    #tab-calc.active {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      column-gap: 28px;
-      align-items: start;
-      padding-left: calc(80px + 24px);
-    }
-    .calc-right { position: sticky; top: 80px; }
-  }
 
   /* ── Bottom Nav ── */
   nav {
@@ -305,6 +276,60 @@
     animation: spin .6s linear infinite; display: inline-block; vertical-align: middle; margin-left: 6px;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Desktop layout ── */
+  @media (min-width: 720px) {
+    :root { --header-h: 57px; --sidebar-w: 88px; }
+
+    body { padding-bottom: 0; }
+
+    /* Header: full width, fixed at top */
+    header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      padding: 14px 24px;
+    }
+
+    /* Sidebar: fixed, below header, full remaining height */
+    nav {
+      position: fixed;
+      top: var(--header-h); left: 0; bottom: 0;
+      width: var(--sidebar-w); height: auto;
+      flex-direction: column; justify-content: flex-start;
+      gap: 0; padding: 12px 0;
+      border-top: none; border-right: 1px solid var(--sage-light);
+      border-bottom: none;
+    }
+    .nav-btn {
+      flex: none; width: 100%; flex-direction: column;
+      font-size: 11px; padding: 14px 8px; gap: 5px;
+      min-height: 0;
+    }
+    .nav-btn svg { width: 22px; height: 22px; }
+
+    /* PAT banner + content pushed right of sidebar, below header */
+    #pat-banner {
+      margin-top: var(--header-h);
+      margin-left: var(--sidebar-w);
+    }
+    .tab-content {
+      margin-top: var(--header-h);
+      margin-left: var(--sidebar-w);
+      padding: 24px 32px;
+      max-width: none;
+    }
+
+    /* Calculator: two-column grid */
+    #tab-calc.active {
+      display: grid;
+      grid-template-columns: minmax(300px, 1fr) minmax(280px, 1fr);
+      column-gap: 32px;
+      align-items: start;
+    }
+    .calc-right { position: sticky; top: calc(var(--header-h) + 24px); }
+
+    /* Toast above bottom of viewport, not above nav */
+    #toast { bottom: 24px; }
+  }
 </style>
 </head>
 <body>
