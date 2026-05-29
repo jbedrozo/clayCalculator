@@ -36,5 +36,24 @@
     "throwingDepth": 5.741,
     "estimatedWeightLbs": 2.274,
     "savedAt": "2026-05-29T22:36:01.492Z"
+  },
+  {
+    "id": "c4fdf8c3-d7ea-4166-9642-b29a64f7eecf",
+    "projectName": "8\" clear planter",
+    "notes": "",
+    "clayId": "cac-oregon-brown",
+    "formType": "cylinder",
+    "taper": "straight",
+    "unit": "in",
+    "desiredHeight": 8,
+    "desiredWidth": 8.5,
+    "desiredDepth": 8.5,
+    "wallThickness": 0.25,
+    "footThickness": 0.25,
+    "throwingHeight": 9.185,
+    "throwingWidth": 9.759,
+    "throwingDepth": 9.759,
+    "estimatedWeightLbs": 6.473,
+    "savedAt": "2026-05-29T22:38:22.152Z"
   }
 ]
