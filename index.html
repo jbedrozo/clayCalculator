@@ -279,8 +279,8 @@
 
   /* ── Presets carousel ── */
   .calc-presets {
-    margin-top: 24px; padding-top: 20px;
-    border-top: 1px solid var(--sage-light);
+    margin-bottom: 20px; padding-bottom: 20px;
+    border-bottom: 1px solid var(--sage-light);
   }
   .presets-label {
     font-size: 11px; font-weight: 600; text-transform: uppercase;
@@ -386,6 +386,12 @@
      TAB 1: CALCULATOR
 ════════════════════════════════════════ -->
 <div id="tab-calc" class="tab-content active">
+
+  <!-- PRESETS CAROUSEL -->
+  <div class="calc-presets">
+    <div class="presets-label">Inspiration — click to load</div>
+    <div class="presets-carousel" id="presets-carousel"></div>
+  </div>
 
   <!-- LEFT COLUMN -->
   <div class="calc-left">
@@ -544,12 +550,6 @@
     </div>
 
   </div><!-- /calc-right -->
-
-  <!-- PRESETS CAROUSEL -->
-  <div class="calc-presets">
-    <div class="presets-label">Inspiration — click to load</div>
-    <div class="presets-carousel" id="presets-carousel"></div>
-  </div>
 
 </div><!-- /tab-calc -->
 
