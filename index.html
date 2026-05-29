@@ -89,20 +89,25 @@
     header { position: sticky; top: 0; z-index: 10; }
     nav {
       position: fixed; top: 0; bottom: auto; left: 0; right: auto;
-      flex-direction: column; height: 100dvh; width: 72px;
+      flex-direction: column; justify-content: flex-start; gap: 4px;
+      height: 100dvh; width: 80px;
       border-top: none; border-right: 1px solid var(--sage-light);
-      padding-bottom: 0;
+      padding: 16px 0; overflow: hidden;
     }
-    .nav-btn { flex-direction: column; font-size: 10px; }
-    header { padding-left: calc(72px + 16px); }
-    #pat-banner { padding-left: calc(72px + 16px); }
-    .tab-content { padding: 24px 24px 24px calc(72px + 24px); }
+    .nav-btn {
+      flex-direction: column; font-size: 10px; width: 100%;
+      padding: 10px 4px; gap: 4px;
+    }
+    .nav-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+    header { padding-left: calc(80px + 16px); }
+    #pat-banner { padding-left: calc(80px + 16px); }
+    .tab-content { padding: 24px 24px 24px calc(80px + 24px); }
     #tab-calc.active {
       display: grid;
       grid-template-columns: 1fr 1fr;
       column-gap: 28px;
       align-items: start;
-      padding-left: calc(72px + 24px);
+      padding-left: calc(80px + 24px);
     }
     .calc-right { position: sticky; top: 80px; }
   }
@@ -120,9 +125,10 @@
     flex: 1; display: flex; flex-direction: column; align-items: center;
     justify-content: center; gap: 3px; background: none; border: none;
     cursor: pointer; font-family: var(--font-sans); font-size: 11px;
-    font-weight: 500; color: var(--sage); min-height: 44px; padding: 6px 0;
+    font-weight: 500; color: var(--sage); min-height: 44px; padding: 6px 4px;
+    white-space: nowrap; overflow: hidden;
   }
-  .nav-btn svg { width: 22px; height: 22px; }
+  .nav-btn svg { width: 22px; height: 22px; flex-shrink: 0; }
   .nav-btn.active { color: var(--olive-deep); }
   .nav-btn.active svg path, .nav-btn.active svg rect, .nav-btn.active svg circle { fill: var(--olive-deep); }
 
