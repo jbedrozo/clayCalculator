@@ -1401,12 +1401,14 @@ function drawPresetSvg(svgEl, profile, hIn, diamIn) {
   const tW = hw * topR, mW = hw * midR, bW = hw * botR;
   const mYpx = top + drawH * midY;
 
-  function side(s) {
-    return `M ${cx - tW*s} ${top}
-      C ${cx - tW*s} ${top + drawH*0.12}, ${cx - mW*s} ${mYpx - drawH*0.1}, ${cx - mW*s} ${mYpx}
-      C ${cx - mW*s} ${mYpx + drawH*0.1}, ${cx - bW*s} ${bot - drawH*0.06}, ${cx - bW*s} ${bot}`;
-  }
-  const full = `${side(1)} L ${cx+bW} ${bot} ${side(-1).replace('M','').trimStart()} Z`;
+  // Left side: top-left → bottom-left (downward)
+  const leftSide = `M ${cx-tW} ${top}
+    C ${cx-tW} ${top+drawH*0.12}, ${cx-mW} ${mYpx-drawH*0.1}, ${cx-mW} ${mYpx}
+    C ${cx-mW} ${mYpx+drawH*0.1}, ${cx-bW} ${bot-drawH*0.06}, ${cx-bW} ${bot}`;
+  // Right side: bottom-right → top-right (upward — control points reversed)
+  const rightSide = `C ${cx+bW} ${bot-drawH*0.06}, ${cx+mW} ${mYpx+drawH*0.1}, ${cx+mW} ${mYpx}
+    C ${cx+mW} ${mYpx-drawH*0.1}, ${cx+tW} ${top+drawH*0.12}, ${cx+tW} ${top}`;
+  const full = `${leftSide} L ${cx+bW} ${bot} ${rightSide} Z`;
   svgEl.innerHTML = `
     <path d="${full}" fill="#E8E4D8" stroke="#4A5240" stroke-width="1.5" stroke-linejoin="round"/>
     <line x1="${cx-bW+3}" y1="${bot}" x2="${cx+bW-3}" y2="${bot}" stroke="#4A5240" stroke-width="1.5" stroke-linecap="round"/>`;
