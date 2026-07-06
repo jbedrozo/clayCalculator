@@ -55,5 +55,23 @@
     "throwingDepth": 9.759,
     "estimatedWeightLbs": 6.473,
     "savedAt": "2026-05-29T22:38:22.152Z"
+  },
+  {
+    "id": "4d44545e-ac18-4349-9c4f-e3fccaaaa0bf",
+    "projectName": "8\" clear planter (copy)",
+    "notes": "",
+    "clayId": "laguna-speckled-buff",
+    "formType": "cylinder",
+    "taper": "straight",
+    "unit": "in",
+    "twoDiamMode": false,
+    "desiredHeight": 8,
+    "desiredDiameter": 8.5,
+    "throwingDiameter": 9.659,
+    "wallThickness": 0.25,
+    "footThickness": 0.25,
+    "throwingHeight": 9.091,
+    "estimatedWeightLbs": 6.473,
+    "savedAt": "2026-07-06T19:25:57.510Z"
   }
 ]
